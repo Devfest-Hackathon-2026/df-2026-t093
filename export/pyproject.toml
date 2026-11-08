@@ -1,0 +1,19 @@
+[project]
+name = "export"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=2.4.0",
+    "numpy>=2.5.4",
+    "onnx>=1.23.2",
+    "onnxruntime>=1.31.1",
+    "onnxscript>=0.7.2",
+    "pyarrow>=26.0.0",
+    "soundfile>=0.14.0",
+    "speechbrain>=1.1.2",
+    "torch>=2.15.0",
+    "torchaudio>=2.11.1",
+]
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cpu"

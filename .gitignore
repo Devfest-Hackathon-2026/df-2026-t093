@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+.venv/
+export/models/
+export/data/
+
+# LaTeX 中間ファイル
+report/*.aux
+report/*.log
+report/*.out
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
