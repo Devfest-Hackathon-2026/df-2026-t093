@@ -1,14 +1,14 @@
 import SwiftUI
 import Shared
 
-private func utc(_ ms: Int64?) -> String {
+func utc(_ ms: Int64?) -> String {
     guard let ms else { return "時刻不明" }
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd HH:mm:ss'Z'"
     return f.string(from: Date(timeIntervalSince1970: Double(ms) / 1000))
 }
 
-private func status(_ s: UiState) -> String {
+func status(_ s: UiState) -> String {
     switch s.conn {
     case .unregistered: return "未登録"
     case .scanning: return "scan 中"
@@ -27,10 +27,12 @@ struct ContentView: View {
         VStack(spacing: 0) {
             if model.state.settings.demo { Text("DEMO").frame(maxWidth: .infinity).padding(8).background(Color.red).foregroundColor(.white) }
             TabView {
-                SyncView().tabItem { Text("同期") }
-                ListView().tabItem { Text("一覧") }
-                SettingsView().tabItem { Text("設定") }
-            }
+                HomeView().tabItem { Label("ホーム", systemImage: "house") }
+                LogsView().tabItem { Label("ログ", systemImage: "text.bubble") }
+                ClinicView().tabItem { Label("診療", systemImage: "cross.case") }
+                PrivacyView().tabItem { Label("プライバシー", systemImage: "lock.shield") }
+                DevView().tabItem { Label("開発", systemImage: "wrench.and.screwdriver") }
+            }.tint(pendantTeal)
         }
     }
 }

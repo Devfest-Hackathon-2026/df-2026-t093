@@ -1,0 +1,166 @@
+import SwiftUI
+import Shared
+
+// ハリボテ: 見た目と画面遷移を決めるための固定データ（Android の ProductUi.kt と同じ内容）。
+// 録音の有無・接続状態・最終同期だけ実データ（UiState）。
+// ponytail: 保存・文字起こし・要約・共有は未接続。実装するときはここの固定データを差し替える。
+
+let pendantTeal = Color(red: 0, green: 0.475, blue: 0.42)
+
+private struct Line { let time, who, text: String }
+private struct Day: Identifiable {
+    let date, summary, audio: String
+    let lines: [Line]
+    var id: String { date }
+}
+
+private let days = [
+    Day(date: "11/9（月）", summary: "朝食は完食。午後は膝の痛みを2回訴えた。夜は穏やかに家族と通話。",
+        audio: "ADPCM 32 kbps ・ 5時間12分 ・ 約 72 MB", lines: [
+            Line(time: "07:42", who: "ご本人", text: "今日は、ちょっと膝が痛いねえ。"),
+            Line(time: "07:43", who: "ヘルパー", text: "湿布を貼りましょうか。朝ごはんの後でいいですか？"),
+            Line(time: "14:10", who: "ご本人", text: "さっきから、また膝がずきずきする。"),
+            Line(time: "19:30", who: "家族", text: "お父さん、薬は飲んだ？"),
+            Line(time: "19:31", who: "ご本人", text: "飲んだよ。大丈夫。")]),
+    Day(date: "11/8（日）", summary: "終日落ち着いて過ごした。夕方に物忘れの訴えが1回。",
+        audio: "ADPCM 32 kbps ・ 4時間40分 ・ 約 65 MB", lines: [
+            Line(time: "10:05", who: "ご本人", text: "今日は、何曜日だったかな。"),
+            Line(time: "10:06", who: "家族", text: "日曜日だよ。散歩に行こうか。"),
+            Line(time: "17:20", who: "ご本人", text: "鍵をどこに置いたか、忘れてしまった。")]),
+]
+
+private struct InfoCard: View {
+    let title, main, sub: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.subheadline)
+            Text(main).font(.title2)
+            Text(sub).font(.caption)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+struct HomeView: View {
+    @EnvironmentObject var model: AppModel
+    var body: some View {
+        let s = model.state
+        let rec = s.info?.recording ?? true
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 16) {
+                    // 本体のラッチインジケーター（録音中は赤、停止は黒）と同じ見た目
+                    Circle().fill(rec ? Color(red: 0.84, green: 0, blue: 0) : .black).frame(width: 56, height: 56)
+                    VStack(alignment: .leading) {
+                        Text(rec ? "録音中" : "停止中").font(.title2.bold())
+                        Text(rec ? "ペンダントの前面が赤く表示されています" : "ペンダントの前面は黒です")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                InfoCard(title: "同期", main: status(s), sub: s.lastSync.map { "最後: \(utc($0.atMs))" } ?? "次回: 約2時間ごと")
+                InfoCard(title: "電源", main: "ソーラー発電中", sub: "蓄電 82 % ・ 非常用電池 満")
+                InfoCard(title: "端末に保存済み", main: "3日分のうち 1.2日", sub: "古い順に自動で整理します")
+                Text("今日のハイライト").font(.headline)
+                ForEach(days[0].summary.split(separator: "。").map(String.init), id: \.self) { Text("・\($0)") }
+            }.padding()
+        }
+    }
+}
+
+struct LogsView: View {
+    @State private var tier = 0
+    var body: some View {
+        VStack(spacing: 8) {
+            Picker("", selection: $tier) { Text("文字起こし").tag(0); Text("要約").tag(1); Text("生データ").tag(2) }
+                .pickerStyle(.segmented).padding(.horizontal)
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(days) { d in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(d.date).font(.headline)
+                            switch tier {
+                            case 0: ForEach(d.lines, id: \.time) { Text("\($0.time)  \($0.who)：\($0.text)") }
+                            case 1: Text(d.summary)
+                            default: Text(d.audio)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    }
+                }.padding(.horizontal)
+            }
+        }.padding(.top)
+    }
+}
+
+struct ClinicView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("次回診療向けサマリー").font(.title2)
+                Text("対象期間: 11/2〜11/9（山田 太郎さん）").font(.caption)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("気になる点").font(.headline)
+                    Text("・膝の痛みの訴え: 週5日（朝・午後に多い）")
+                    Text("・物忘れの訴え: 週2回（鍵・曜日）")
+                    Text("・服薬の確認: 声かけに「飲んだ」と返答 6/7日")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                Text("※ 会話ログからの自動要約です。診断ではありません。").font(.caption)
+                Button("医師に共有する") {}.buttonStyle(.borderedProminent)
+            }.padding()
+        }
+    }
+}
+
+struct PrivacyView: View {
+    @State private var cloud = false
+    @State private var confirm = false
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("プライバシー").font(.title2)
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(isOn: Binding(get: { cloud }, set: { if $0 { confirm = true } else { cloud = false } })) {
+                        VStack(alignment: .leading) {
+                            Text("クラウドに送信する").font(.headline)
+                            Text(cloud ? "オン: 文字起こしテキストを Gemini API に送ります" : "オフ: すべてこの端末の中で処理します（初期値）").font(.caption)
+                        }
+                    }
+                    if cloud { Text("外部サーバーに会話の内容が渡ります。ご本人・ご家族の同意を確認してください。").foregroundColor(.red) }
+                }
+                .padding(16).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                VStack(alignment: .leading) {
+                    Text("録音していることの表示").font(.headline)
+                    Text("録音中はペンダント前面が赤になります。電源が切れると黒になり、周りの方にも分かります。").font(.caption)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            }.padding()
+        }
+        .alert("クラウド送信をオンにしますか？", isPresented: $confirm) {
+            Button("理解してオンにする") { cloud = true }
+            Button("やめる", role: .cancel) {}
+        } message: { Text("会話の文字起こしが外部のサーバーに送信されます。第三者の声が含まれる場合があります。") }
+    }
+}
+
+/// 開発用の既存画面（BLE 同期・受信ログ・設定）。
+struct DevView: View {
+    @State private var sub = 0
+    var body: some View {
+        VStack {
+            Picker("", selection: $sub) { Text("同期").tag(0); Text("一覧").tag(1); Text("設定").tag(2) }
+                .pickerStyle(.segmented).padding()
+            switch sub {
+            case 0: SyncView()
+            case 1: ListView()
+            default: SettingsView()
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
