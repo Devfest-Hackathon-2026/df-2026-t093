@@ -14,7 +14,7 @@ T5848 (I²S) ─ I2S20 ─ 16 kHz / 24 bit host slot（LP 有効 16 bit）─ �
 
 | 項目 | 内容 | 確度 |
 |---|---|---|
-| マイク | TDK T5848（MMICT5848-00-012、I²S 出力）を 1 個。Standard と Premium で同じ（[product.md](./product.md)）。T5838 から替えた理由は [decisions.md H7](../decisions.md) | 確定（実物は未入手。実機の値は §7.5 で測る） |
+| マイク | TDK T5848（MMICT5848-00-012、I²S 出力）を 1 個。Standard と Premium で同じ（[product.md](./product.md)）。 | 確定（実物は未入手。実機の値は §7.5 で測る） |
 | 運用 | 通常は AAD Analog（20 µA）で待ち、音を検出したら低電力 I²S（120 µA）で録音し、無音が続いたら AAD に戻る | 方針（連続低電力 I²S に対する ASR 劣化を §7.5 で確かめてから確定） |
 | 録音形式 | LP は 16 kHz・有効 16 bit、48 SCK/stereo frame。FW は 24 bit host slot で受信し、8 kHz・16 bit・mono に間引いて IMA-ADPCM 4 bit。4000 B/s = 32 kbps | 方針は確定。有効 bit の位置・padding・実クロック・CPU コストは実機確認 |
 | ビットレート上限 | 32 kbps。16 kHz が必要になっても 2 bit ADPCM などで 32 kbps 以内に収める | 確定 |
@@ -46,7 +46,7 @@ T5848 (I²S) ─ I2S20 ─ 16 kHz / 24 bit host slot（LP 有効 16 bit）─ �
 | 8 | SD | 出力 | nRF の SDIN。100 kΩ pull-down |
 
 - 出典: [TDK T5848 公式製品ページ](https://www.invensense.tdk.com/en-us/products/microphone/t5848) の DS-000479 **Rev 1.1（2026-09-15、2026-10-23 確認）**。電流 typ は保証上限ではない。旧 Rev 1.0／T5838 由来の THSEL 手順は、Rev 1.1 と照合後に実機適用する。
-- 価格・在庫（2026-10-18）: DigiKey JP $2.88（在庫 15,115）、Mouser JP ¥475（在庫 40,281）。T5838（PDM、7 pad、ピン非互換）は在庫が戻れば代替になる（[decisions.md H7](../decisions.md)）。
+- 価格・在庫（2026-10-18）: DigiKey JP $2.88（在庫 15,115）、Mouser JP ¥475（在庫 40,281）。T5838（PDM、7 pad、ピン非互換）は在庫が戻れば代替になる。
 
 ### 2.2 モードとクロック（1.8 V）
 
@@ -225,7 +225,7 @@ d が高い環境（街中、カフェ）ほど差は小さい。d は実生活�
 - **IMA-ADPCM 4 bit、8 kHz、mono。** 1 バイトに 2 サンプルを入れ、先のサンプルが下位ニブル（WAV IMA の順）。32 kbps = 4000 B/s。実装は `fw/lib/ima_adpcm/`（純 C）。
 - **predictor と step index は record ごとに 0 に初期化する**（エンコーダとデコーダの両側）。record を途中から読んでも、codec 値を切り替えても復号が壊れない。header に初期状態は持たせない（[formats.md §2](./formats.md)）。
 - 1 record の長さは約 8 秒（payload 32000 B）が基準。page 境界に揃える場合の長さは [formats.md §3](./formats.md)。
-- エンコーダの CPU コスト（XIAO nRF54L15、128 MHz、-Os、RRAM 実行、実測）: **85.5 cycle/sample = 684k cycle/s = 171 cycle/出力 byte**。約 42 µW は別条件の CoreMark 由来約 60.7 pJ/cycle を掛けた推定で、実測電力ではない。I²S・HFXO・DMA・FIR・copy は別に測る（[Premium の電力再評価](../plan/premium-hackathon.md#5-エネルギーの再計算と成立条件)）。
+- エンコーダの CPU コスト（XIAO nRF54L15、128 MHz、-Os、RRAM 実行、実測）: **85.5 cycle/sample = 684k cycle/s = 171 cycle/出力 byte**。約 42 µW は別条件の CoreMark 由来約 60.7 pJ/cycle を掛けた推定で、実測電力ではない。I²S・HFXO・DMA・FIR・copy は別に測る（Premium の電力再評価）。
 
 ### 5.2 損益分岐（方針）
 

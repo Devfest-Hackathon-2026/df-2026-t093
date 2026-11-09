@@ -1,4 +1,4 @@
-/* Measurement scenario (docs/plan/prototype.md §2.4): the five states whose difference currents we want, one after
+/* Measurement scenario: the five states whose difference currents we want, one after
  * another, 20 s each, announced by n pulses on the BLE marker so the scope can find them. */
 #include <zephyr/kernel.h>
 #include "audio.h"

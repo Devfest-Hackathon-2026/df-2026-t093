@@ -2,7 +2,7 @@
 
 対象: BLE の RF 部分。TX 電力の上限、BC15M モジュールのアンテナの扱いと置き方、RF ESD、RF の評価方法、裸チップまたはオプションで使う場合のアンテナ構成（matching・selector・strap・RF テスト経路）。
 
-規制（技適・SIG・CE・FCC・UK）と問い合わせは [plan/compliance.md](../plan/compliance.md)、ピン割当・テストポイント・配置と ESD の一般規則は [board.md](./board.md)、筐体の stack-up と防水は [mechanical.md](./mechanical.md)、BLE のプロトコルは [formats.md](./formats.md) が持つ。
+規制（技適・SIG・CE・FCC・UK）と問い合わせは plan/compliance.md、ピン割当・テストポイント・配置と ESD の一般規則は [board.md](./board.md)、筐体の stack-up と防水は [mechanical.md](./mechanical.md)、BLE のプロトコルは [formats.md](./formats.md) が持つ。
 
 確度の表記:
 
@@ -23,8 +23,8 @@
 
 ## §2 TX 電力
 
-- **+4 dBm EIRP 以下に固定する**（確定）。Standard と Premium で同じ（Bluetooth の構成を共通にして、SIG の Design を 1 つにするため。[plan/compliance.md](../plan/compliance.md)）。
-- 理由: FCC の SAR 試験を免除できる見込みがある（47 CFR 1.1307(b)(3)。2.45 GHz・人体から 5 mm で約 2.7 mW = 約 +4.3 dBm）。EN 50663 も 20 mW 以下なら簡易評価で済む。ペンダントの BLE は近距離の同期が主なので、両立しやすい。法的な確定ではない。試験所への確認は [plan/compliance.md](../plan/compliance.md)（#15）。
+- **+4 dBm EIRP 以下に固定する**（確定）。Standard と Premium で同じ（Bluetooth の構成を共通にして、SIG の Design を 1 つにするため。plan/compliance.md）。
+- 理由: FCC の SAR 試験を免除できる見込みがある（47 CFR 1.1307(b)(3)。2.45 GHz・人体から 5 mm で約 2.7 mW = 約 +4.3 dBm）。EN 50663 も 20 mW 以下なら簡易評価で済む。ペンダントの BLE は近距離の同期が主なので、両立しやすい。法的な確定ではない。試験所への確認は plan/compliance.md（#15）。
 - EIRP = 設定する出力 + アンテナ利得。BC15M の技適の証明書にあるアンテナ利得は最大 1.5 dBi なので、**設定する出力は +2.5 dBm 以下**。モジュールの最大放射は +5.64 dBm（伝導 +8 dBm のとき）。胸元での実効利得と EIRP は実機で測って確定する。
 - アンテナはモジュール上端の、シールド（6.0 mm）から先の約 3.6 mm の PCB トレース。**アンテナの下は表裏とも銅なし**（footprint に keep-out がある）。Fanstel の取付の助言は §3.2。
 - 届く距離は Phase 1 の実機で測る。**足りない場合に TX 電力を上げて解決することはできない**（上限が固定のため）。アンテナの向き・位置・筐体の側で解決する。
@@ -33,7 +33,7 @@
 ## §3 BC15M モジュールのアンテナ（現行構成）
 
 - BC15M の PCB アンテナを使う。モジュールは技適（201-250527）・FCC（X8WBC15）を取得済みで、**RF 経路（matching とアンテナ）は認証された状態のまま使う**。基板側で変えるのは、keep-out、GND、周囲の部品配置だけ。
-- モジュールの RF 経路に外部アンテナ・strap・RF スイッチを足す構成は、認証の条件が変わる可能性がある。足す場合は §6 と [plan/compliance.md](../plan/compliance.md) を先に確認する（要確認）。
+- モジュールの RF 経路に外部アンテナ・strap・RF スイッチを足す構成は、認証の条件が変わる可能性がある。足す場合は §6 と plan/compliance.md を先に確認する（要確認）。
 - アンテナ keep-out の寸法と基板端への置き方は Fanstel のデータシートと footprint（§3.2）に従う。RF 端子がパッドに出ているかは未確認。下の規則はデータシートより優先しない。
 
 ### §3.1 人体の影響
@@ -176,8 +176,8 @@ strap / 接点 → ESD 素子（極短の GND 帰路）→ matching / selector �
 
 | 項目 | 状態 |
 |---|---|
-| +4 dBm EIRP 以下での RF 評価と、SAR 免除（FCC 1.1307(b)(3)）・EN 50663 の簡易評価が成り立つかの試験所への確認 | #15、[plan/compliance.md](../plan/compliance.md) |
+| +4 dBm EIRP 以下での RF 評価と、SAR 免除（FCC 1.1307(b)(3)）・EN 50663 の簡易評価が成り立つかの試験所への確認 | #15、plan/compliance.md |
 | BC15M のアンテナの置き方（Fanstel の取付の助言どおりにできるか）、RF 端子の有無（データシートで確認） | 新規 issue 候補: BC15M 基板の RF 評価（keep-out・EIRP 設定・胸元での RSSI と最低 TX 電力） |
 | 胸元に装着した状態での RSSI・転送速度・最低 TX 電力・届く距離（Phase 1 の実機。EV-BC15M との RSSI の比較を含む） | 新規 issue 候補: BC15M 基板の RF 評価（同上） |
-| モジュールの RF 経路に外部アンテナを足す構成が、モジュールの認証（技適・FCC）の条件に収まるか | [plan/compliance.md](../plan/compliance.md)。strap を採る場合だけ |
+| モジュールの RF 経路に外部アンテナを足す構成が、モジュールの認証（技適・FCC）の条件に収まるか | plan/compliance.md。strap を採る場合だけ |
 | 裸チップ構成の採否（現在の計画には無い） | 採る場合に新規 issue |

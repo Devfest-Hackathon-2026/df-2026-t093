@@ -8,7 +8,7 @@
 - アンテナ・TX 電力・RF の試験は [rf.md](./rf.md)。
 - マイクと AAD は [audio.md](./audio.md)、NAND の配線の方針は [storage.md §3](./storage.md)、RTC は [firmware.md §5](./firmware.md)、SWD の保護（APPROTECT）は [security.md §8](./security.md)、終端表示の回路は [terminal-indicator.md](./terminal-indicator.md)。
 - 筐体の stack-up・防水・音響ポート・privacy latch の機構は [mechanical.md](./mechanical.md)。
-- 試作の順序・使う基板・調達は [plan/prototype.md](../plan/prototype.md)。電流測定の治具は [docs/test/current-measurement-fixture.md](../test/current-measurement-fixture.md)。
+- 試作の順序・使う基板・調達は plan/prototype.md。電流測定の治具は [docs/test/current-measurement-fixture.md](../test/current-measurement-fixture.md)。
 
 確度の表記:
 
@@ -166,7 +166,7 @@ CSP47 のピン表（使うものだけ、表 81）:
   - Tag-Connect TC2030 と同じ配置（2 × 3、1.27 mm）の穴なしのポゴパッドに、ポゴピンを束ねた治具を当てる（決定 H6）。TC2030 の位置決め穴は付けない（裏面は電池ホルダが占める）。量産・最終筐体では専用 fixture で接触させる。
   - SWD の VREF は電圧の参照で、120 F の充電端子には使わない（§5.3）。
 - **SWD の service / recovery 用パッドは、将来 APPROTECT を有効にしても物理的に残す**（[security.md §8](./security.md)）。
-- 書込みプローブは、XIAO の SAMD11（CMSIS-DAP）を流用する案がある（方針）。**1.8 V のターゲットに合わせる方法と、XIAO の nRF54L15 と SWD の線を共有しない方法は未検証**（[plan/prototype.md](../plan/prototype.md)）。
+- 書込みプローブは、XIAO の SAMD11（CMSIS-DAP）を流用する案がある（方針）。**1.8 V のターゲットに合わせる方法と、XIAO の nRF54L15 と SWD の線を共有しない方法は未検証**（plan/prototype.md）。
 - UART は必須ではない。USB / UART のコネクタを常設すると、ケースの穴、ESD 対策、面積、待機電力が増える。BLE + SWD で FW のデバッグはできる。**最初の基板には TX / RX のテストパッドだけ置く。**
 - 最終筐体で pogo / SWD パッドが外から通常触れない位置にし、開発・製造 fixture からのアクセスを確保する。
 
@@ -212,7 +212,7 @@ CSP47 のピン表（使うものだけ、表 81）:
 - Premium は cap 側の経路も電流を測れるリンクを設ける。PMOS の切替・充電経路を誤って短絡しない配置にする。
 
 - 理由: 全体だけ測ると、平均電流が 100 µA 高いときに、マイク、NAND の漏れ、GPIO の back-power、PMIC、BLE のどれかを切り分けられない。rail ごとに測れれば、データシートとの乖離をすぐ見つけられる。
-- 測定は [INA228 の治具](../test/current-measurement-fixture.md)に固定している。測定の項目と順序は [power.md §10.3](./power.md) と [plan/prototype.md](../plan/prototype.md)。電源の品質はオシロで、1V8 rail の最小値、mux 切替の過渡、NAND の program パルス、BLE の TX パルスを見る（brownout の余裕の確認）。
+- 測定は [INA228 の治具](../test/current-measurement-fixture.md)に固定している。測定の項目と順序は [power.md §10.3](./power.md) と plan/prototype.md。電源の品質はオシロで、1V8 rail の最小値、mux 切替の過渡、NAND の program パルス、BLE の TX パルスを見る（brownout の余裕の確認）。
 
 ### §5.3 外部給電（Premium の初期充電・cold start）
 
@@ -376,7 +376,7 @@ CSP47 のピン表（使うものだけ、表 81）:
 | BC15M の隠れパッド（B1〜E5 の 20 個）のはんだの確認（組立後の電気試験）、VDD の下限（rail を 1.75 V 付近まで下げる） | 試作で確認（[hw/standard/DESIGN.md §5・§6](../../hw/standard/DESIGN.md)） |
 | 電池電圧の測定経路の実装（分圧器の値、スイッチ、ピン）。Standard の電圧しきい値 | #12 |
 | privacy latch の機構（スライドか磁気式か）、FW の再設定（AAD の再アンロック）と event の kind | 配線は SN74AUP3G34 で実装済み（rev 0）。新規 issue 候補: privacy latch の機構 |
-| SWD プローブ（XIAO の SAMD11 の流用）を 1.8 V のターゲットで使う方法 | 新規 issue 候補: SWD プローブ（XIAO の SAMD11 流用）の 1.8 V ターゲット検証（[plan/prototype.md](../plan/prototype.md)） |
+| SWD プローブ（XIAO の SAMD11 の流用）を 1.8 V のターゲットで使う方法 | 新規 issue 候補: SWD プローブ（XIAO の SAMD11 流用）の 1.8 V ターゲット検証（plan/prototype.md） |
 | 逆流防止の footprint（R2 0 Ω、U1 LM66100 は DNP）を載せるか、LM66100 の漏れ・価格・在庫 | rev 0 に footprint は実装済み。載せるかは運用次第（新規 issue 不要） |
 | Solar 入力の ESD 保護素子の型番・定数、ESD 試験のレベルと方法 | 新規 issue 候補: Solar 入力の ESD 保護と ESD 試験の定義 |
 | XIAO 開発基板のレベル変換: TXU の tpd と SPI の上限 MHz、BQA 型の在庫、3V3 ピンの耐性 | #22（XIAO 開発専用になったので、必要になるまで保留） |

@@ -21,7 +21,7 @@ Bluetooth の構成は同じ。差は電源・保存・筐体だけ。
 | 保存 | 1.8 V 生 SPI NAND 512 Mbit〜1 Gbit | 1.8 V 生 SPI NAND 4 Gbit 基準 |
 | 外形の目標 | φ40〜42 mm、厚さ 15 mm 以内 | φ40〜42 mm、厚さ 18〜22 mm 級 |
 
-どちらも、前面が押せるボタン、電源が尽きると黒に反転する赤 / 黒の終端表示フラグ、物理の privacy latch を持つ。**2026 年 11 月中旬のハッカソンに向け、Premium の試作を共通コアと並行して先行する。Solar・外観・非常用ボタン電池を必須とし、USB 給電は設けない。** [調査と実行計画](docs/plan/premium-hackathon.md)。
+どちらも、前面が押せるボタン、電源が尽きると黒に反転する赤 / 黒の終端表示フラグ、物理の privacy latch を持つ。**2026 年 11 月中旬のハッカソンに向け、Premium の試作を共通コアと並行して先行する。Solar・外観・非常用ボタン電池を必須とし、USB 給電は設けない。**
 
 上の表は製品目標。**11 月のデモ機は短時間の録音を優先し、512 Mbit NAND を設計採用する。48 h のオフライン保存はデモ機の対象外**とする。実機の保存・電源時間は未検証。
 
@@ -46,7 +46,7 @@ Premium   Solar → BQ25505 ↔ 120 F HSL → VSTOR ─ mux ───┤→ TPS6
 
 ## ドキュメント
 
-今の仕様は `docs/spec/`。決定の経緯は `docs/decisions.md`。
+今の仕様は `docs/spec/`。
 
 | パス | 内容 |
 |---|---|
@@ -61,12 +61,7 @@ Premium   Solar → BQ25505 ↔ 120 F HSL → VSTOR ─ mux ───┤→ TPS6
 | [docs/spec/rf.md](docs/spec/rf.md) | アンテナ、整合、RF の ESD、送信電力、RF 試験 |
 | [docs/spec/board.md](docs/spec/board.md) | ピン割当、test point、測定リンク、配置・ESD・EMI の規則 |
 | [docs/spec/mechanical.md](docs/spec/mechanical.md) | 筐体、汗・防水、Solar ボタン、積層 |
-| [docs/plan/prototype.md](docs/plan/prototype.md) | 試作の段階、基板、調達、道具 |
-| [docs/plan/premium-hackathon.md](docs/plan/premium-hackathon.md) | 11 月中旬の Premium 試作: 電源回路の修正、一次資料調査、エネルギー再計算、調達と実装順 |
-| [docs/plan/compliance.md](docs/plan/compliance.md) | 技適、SIG、CE、FCC、UK、問い合わせの下書き |
-| [docs/decisions.md](docs/decisions.md) | 決定ログ（日付つき、撤回された判断も残す） |
 | [docs/test/](docs/test/) | 試験・測定の固定仕様（INA228 の電流測定治具） |
-| [docs/archive/](docs/archive/) | やめた案と、置き換えられた古いノート（今の仕様ではない） |
 
 調査ログ・価格の調査・測定結果・未決の問いは、GitHub の issue に置く。仕様の「未確定」の表が、該当する issue を指す。
 
@@ -84,4 +79,4 @@ tools/   PC 側のツール（Python / C）: 受信 `pendant_rx.py`、OTA `ota.p
 docs/    仕様・計画・決定ログ・試験・archive
 ```
 
-コードのコメントは `docs/spec/<ファイル> §n` の形で、根拠の節を指す。仕様を変えるときは、その節と `docs/decisions.md` を一緒に直す。
+コードのコメントは `docs/spec/<ファイル> §n` の形で、根拠の節を指す。仕様を変えるときは、その節も一緒に直す。

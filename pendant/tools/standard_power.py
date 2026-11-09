@@ -13,8 +13,8 @@ MIC_ACTIVE_UW = 216         # T5838 LP mode 120 uA x 1.8 V (docs/spec/power.md �
 MIC_AAD_UW = 36             # T5838 AAD 20 uA x 1.8 V (docs/spec/audio.md §4.7)
 MCU_AUDIO_UW = 65           # ADPCM + CRC + DMA at p = 1 (docs/spec/power.md §7.2, ASSUME; ADPCM alone measured 42 uW, docs/spec/audio.md §5.2)
 MCU_FLOOR_UW = 5.2          # nRF54L15 System ON IDLE, GRTC, 256 KB RAM: 2.9 uA x 1.8 V (PS v1.0 front page)
-NOR_PD_UW = 1.8             # W25Q256JW power-down 1 uA typ x 1.8 V (docs/archive/32_NOR_W25Q.md)
-NOR_NJ_PER_BYTE = 133 + 1.7  # 64 KB block erase + program (docs/archive/32_NOR_W25Q.md §3, typ) + 50 MHz read for the sync (6 mA)
+NOR_PD_UW = 1.8             # W25Q256JW power-down 1 uA typ x 1.8 V (W25Q256JW datasheet)
+NOR_NJ_PER_BYTE = 133 + 1.7  # 64 KB block erase + program (W25Q256JW datasheet, typ) + 50 MHz read for the sync (6 mA)
 BLE_MJ_PER_MB = 87          # docs/spec/power.md §7.2 (design hypothesis, 60 to 100)
 RTC_UW = 0.3                # RV-3032 160 nA x 1.8 V (docs/spec/firmware.md §5.3)
 REG_IQ_UW = 0.3             # TPS62840 IQ ~120 nA (data sheet) plus margin

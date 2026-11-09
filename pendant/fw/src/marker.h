@@ -1,4 +1,4 @@
-/* Event markers for the oscilloscope (docs/plan/prototype.md §2.4). Pins come from /zephyr,user. */
+/* Event markers for the oscilloscope. Pins come from /zephyr,user. */
 #ifndef MARKER_H
 #define MARKER_H
 
