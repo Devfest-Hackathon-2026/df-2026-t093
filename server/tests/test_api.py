@@ -177,3 +177,20 @@ def test_api_token(client, monkeypatch):
     assert client.get("/health").status_code == 200
     assert client.get("/status").status_code == 401
     assert client.get("/status", headers={"Authorization": "Bearer secret"}).status_code == 200
+
+
+def test_gemini_error_is_502(client, monkeypatch):
+    from app import llm
+
+    class Boom:
+        class models:
+            @staticmethod
+            def generate_content(**kw):
+                raise RuntimeError("404 model not found")
+
+    monkeypatch.setattr(llm, "enabled", lambda: True)
+    monkeypatch.setattr(llm, "_client", lambda: Boom)
+    client.patch("/settings", json={"cloud_enabled": True})
+    client.post("/days/2026-11-09/lines", json=[{"time": "07:42", "who": "ご本人", "text": "膝が痛い"}])
+    r = client.post("/days/2026-11-09/summarize")
+    assert r.status_code == 502 and "404 model not found" in r.json()["detail"]

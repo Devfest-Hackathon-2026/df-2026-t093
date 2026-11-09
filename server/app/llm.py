@@ -6,10 +6,13 @@
 - ローカル: GEMINI_API_KEY
 """
 
+import logging
 import os
 from functools import lru_cache
 
 from pydantic import BaseModel
+
+log = logging.getLogger(__name__)
 
 MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
@@ -38,16 +41,23 @@ def _client():
 
 
 def generate_json[T: BaseModel](prompt: str, schema: type[T]) -> T:
+    from fastapi import HTTPException, status
     from google.genai import types
 
-    r = _client().models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM,
-            response_mime_type="application/json",
-            response_schema=schema,
-            temperature=0.3,
-        ),
-    )
-    return schema.model_validate_json(r.text)
+    try:
+        r = _client().models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM,
+                response_mime_type="application/json",
+                response_schema=schema,
+                temperature=0.3,
+            ),
+        )
+        return schema.model_validate_json(r.text)
+    except Exception as e:
+        log.exception("Gemini call failed (model=%s)", MODEL)
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, f"Gemini error (model={MODEL}): {type(e).__name__}: {e}"[:500]
+        ) from e
