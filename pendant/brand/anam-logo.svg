@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 300">
+  <!-- 縦組みロゴ（暗い背景用）。文字は Cormorant Garamond Light、無ければ serif -->
+  <rect width="320" height="300" fill="#0E0F11"/>
+  <g transform="translate(110 24) scale(1)">
+    <rect x="44" y="6" width="12" height="24" rx="4" fill="none" stroke="#C8B08A" stroke-width="1.6"/>
+    <circle cx="50" cy="68" r="40" fill="#17181B"/>
+    <path d="M25 97 L50 32 L75 97" fill="none" stroke="#C8B08A" stroke-width="1.8"/>
+    <circle cx="50" cy="68" r="40" fill="none" stroke="#C8B08A" stroke-width="2"/>
+    <circle cx="50" cy="86" r="3.6" fill="#FFFFFF"/>
+  </g>
+  <text x="160" y="214" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-weight="300" font-size="56" letter-spacing="4" fill="#EDE6D8">anam</text>
+  <text x="160" y="246" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="12" letter-spacing="5.4" fill="#C8B08A">THE LIVING ANAMNESIS</text>
+</svg>

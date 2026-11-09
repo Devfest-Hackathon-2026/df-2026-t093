@@ -22,8 +22,16 @@ func status(_ s: UiState) -> String {
 
 struct ContentView: View {
     @EnvironmentObject var model: AppModel
+    @State private var intro = true
 
     var body: some View {
+        ZStack {
+            main
+            if intro { IntroView { withAnimation(.easeOut(duration: 0.3)) { intro = false } }.transition(.opacity) }
+        }
+    }
+
+    private var main: some View {
         VStack(spacing: 0) {
             if model.state.settings.demo { Text("DEMO").frame(maxWidth: .infinity).padding(8).background(Color.red).foregroundColor(.white) }
             TabView {

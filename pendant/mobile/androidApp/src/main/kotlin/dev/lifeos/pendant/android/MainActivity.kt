@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,7 +49,9 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(colorScheme = PendantScheme) {
                 val s by ctl.state.collectAsState()
                 LaunchedEffect(s.settings.demo, granted.value) { apply() }
-                App(s, granted.value, ctl, ::apply, { AppGraph.save(this, it); ctl.updateSettings(it) }, { onGranted -> granted.value = onGranted })
+                var intro by rememberSaveable { mutableStateOf(true) }
+                if (intro) Intro { intro = false }
+                else App(s, granted.value, ctl, ::apply, { AppGraph.save(this, it); ctl.updateSettings(it) }, { onGranted -> granted.value = onGranted })
             }
         }
     }

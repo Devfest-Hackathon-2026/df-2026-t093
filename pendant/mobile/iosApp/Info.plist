@@ -6,14 +6,15 @@
 	<key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-	<key>CFBundleName</key><string>LifeOS Pendant</string>
+	<key>CFBundleName</key><string>anam</string>
+	<key>CFBundleDisplayName</key><string>anam</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleShortVersionString</key><string>0.1.0</string>
 	<key>CFBundleVersion</key><string>1</string>
 	<key>LSRequiresIPhoneOS</key><true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>ペンダントを探して接続し、録音データを受け取るために Bluetooth を使います。</string>
-	<key>UILaunchScreen</key><dict/>
+	<key>UILaunchScreen</key><dict><key>UIColorName</key><string>LaunchBackground</string></dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array><string>UIInterfaceOrientationPortrait</string></array>
 </dict>
