@@ -13,11 +13,13 @@ gcloud config set project "$PROJECT" >/dev/null
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
   artifactregistry.googleapis.com aiplatform.googleapis.com
 
-# Cloud Run の実行サービスアカウント (既定の Compute SA) に Vertex AI の利用権限を付ける
+# 既定の Compute SA に、ソースからのビルド (run.builder) と Vertex AI (aiplatform.user) の権限を付ける
 NUM=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
-gcloud projects add-iam-policy-binding "$PROJECT" \
-  --member="serviceAccount:${NUM}-compute@developer.gserviceaccount.com" \
-  --role=roles/aiplatform.user --condition=None >/dev/null
+for ROLE in roles/run.builder roles/aiplatform.user; do
+  gcloud projects add-iam-policy-binding "$PROJECT" \
+    --member="serviceAccount:${NUM}-compute@developer.gserviceaccount.com" \
+    --role="$ROLE" --condition=None >/dev/null
+done
 
 # SQLite (デモ) なのでインスタンスは 1 台に固定する
 gcloud run deploy "$SERVICE" --source . --region "$REGION" \
