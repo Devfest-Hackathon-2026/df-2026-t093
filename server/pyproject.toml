@@ -1,0 +1,22 @@
+[project]
+name = "ks-server"
+version = "0.1.0"
+description = "Simple FastAPI + SQLite backend"
+authors = [
+    { name = "kanadesisido", email = "takasuyari@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.2",
+    "sqlmodel>=0.0.48",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
