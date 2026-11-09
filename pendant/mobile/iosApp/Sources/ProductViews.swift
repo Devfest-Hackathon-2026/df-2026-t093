@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import Shared
 
@@ -154,6 +155,13 @@ struct PrivacyView: View {
                     if let err { Text(err).font(.caption).foregroundColor(.red) }
                 }
                 .padding(16).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                Toggle(isOn: $live.readAloud) {
+                    VStack(alignment: .leading) {
+                        Text("返答を読み上げる").font(.headline)
+                        Text("要約タブの返答を声でお伝えします").font(.caption)
+                    }
+                }
+                .padding(16).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
                 VStack(alignment: .leading) {
                     Text("録音していることの表示").font(.headline)
                     Text("録音中はペンダント前面が赤になります。電源が切れると黒になり、周りの方にも分かります。").font(.caption)
@@ -200,14 +208,20 @@ private let scripts = [
 ]
 
 struct SummaryView: View {
-    @State private var msgs = [Msg(mine: false, text: "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。")]
+    @State private var msgs = [Msg(mine: false, text: "下の大きなボタンを押して、先生に伝えたいことや気になることを話してください。話し終わったら、もう一度押します。")]
     @ObservedObject private var live = Live.shared
     @State private var input = ""
     @State private var report = false
     @State private var busy = false
+    @State private var typing = false
+    @State private var recording = false
+    @State private var secs = 0
+    @State private var recorder = Recorder()
+
+    private func reply(_ a: String) { msgs.append(Msg(mine: false, text: a)); live.say(a) }
 
     private func local(_ a: String, _ m: String) {
-        msgs.append(Msg(mine: false, text: a))
+        reply(a)
         if !live.memo.contains(m) { live.memo.append(m) }
     }
 
@@ -216,7 +230,37 @@ struct SummaryView: View {
         guard Api.enabled else { return local(a, m) }
         Task {
             busy = true
-            do { msgs.append(Msg(mine: false, text: try await live.ask(q))) } catch { local(a + "（サーバーに接続できないため台本で返答）", m) }
+            do { reply(try await live.ask(q)) } catch { local(a + "（サーバーに接続できないため台本で返答）", m) }
+            busy = false
+        }
+    }
+
+    private func micTapped() {
+        if recording { return stopAndSend() }
+        guard Api.enabled, live.cloud else { return reply("声で相談するには、設定で「クラウドに送信する」をオンにしてください。") }
+        Task {
+            guard await AVAudioApplication.requestRecordPermission() else { return reply("マイクの使用が許可されていません。設定アプリで許可してください。") }
+            live.hush()
+            do { try recorder.start() } catch { return reply("録音を始められませんでした。") }
+            secs = 0; recording = true
+            while recording { // 1 回は最大 60 秒
+                try? await Task.sleep(for: .seconds(1))
+                if recording { secs += 1; if secs >= 60 { stopAndSend() } }
+            }
+        }
+    }
+
+    private func stopAndSend() {
+        guard recording else { return }
+        recording = false
+        let wav = recorder.stop()
+        guard wav.count > 44 + 16_000 else { return reply("短くて聞き取れませんでした。もう一度、ボタンを押してお話しください。") } // 0.5 秒未満
+        Task {
+            busy = true
+            do {
+                let (q, a) = try await live.askVoice(wav)
+                msgs.append(Msg(mine: true, text: q)); reply(a)
+            } catch { reply("うまく届きませんでした。もう一度お話しください。（\(error.localizedDescription)）") }
             busy = false
         }
     }
@@ -235,13 +279,13 @@ struct SummaryView: View {
                         ForEach(msgs) { m in
                             HStack {
                                 if m.mine { Spacer(minLength: 40) }
-                                Text(m.text).padding(10)
+                                Text(m.text).font(.title3).padding(12)
                                     .background(m.mine ? pendantTeal : Color(red: 0.7, green: 0.87, blue: 0.86), in: RoundedRectangle(cornerRadius: 16))
                                     .foregroundColor(m.mine ? .white : .primary)
                                 if !m.mine { Spacer(minLength: 40) }
                             }.id(m.id)
                         }
-                        if busy { Text("考え中…").font(.caption).frame(maxWidth: .infinity, alignment: .leading) }
+                        if busy { Text("聞いています…").frame(maxWidth: .infinity, alignment: .leading) }
                         if !live.memo.isEmpty {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("診察で伝えるメモ").font(.headline)
@@ -255,17 +299,31 @@ struct SummaryView: View {
                 }
                 .onChange(of: msgs.count) { _, _ in withAnimation { proxy.scrollTo(live.memo.isEmpty ? msgs.last?.id as AnyHashable? : "memo", anchor: .bottom) } }
             }
-            Button("医師向け報告書にまとめる") { report = true }.buttonStyle(.borderedProminent).tint(pendantTeal).frame(maxWidth: .infinity)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack { ForEach(scripts, id: \.chip) { sc in Button(sc.chip) { ask(sc.chip, sc.answer, sc.memo) }.buttonStyle(.bordered).disabled(busy) } }
+            // 録音中はペンダントの表示と同じ赤にする
+            Button(action: micTapped) {
+                Text(recording ? "話し終わったら押す（\(secs)秒）" : busy ? "考えています…" : "押して話す")
+                    .font(.title2.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 64)
             }
+            .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+            .tint(recording ? Color(red: 0.84, green: 0, blue: 0) : pendantTeal).disabled(busy)
             HStack {
-                TextField("先生に伝えたいことを相談", text: $input).textFieldStyle(.roundedBorder)
-                Button("送信") { ask(input, "「\(input)」を診察で伝えるメモに追加しました。", input); input = "" }
-                    .buttonStyle(.borderedProminent).disabled(busy || input.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button(typing ? "文字入力を閉じる" : "文字で入力する") { typing.toggle() }
+                Spacer()
+                Button("医師向け報告書にまとめる") { report = true }
+            }.font(.subheadline)
+            if typing {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack { ForEach(scripts, id: \.chip) { sc in Button(sc.chip) { ask(sc.chip, sc.answer, sc.memo) }.buttonStyle(.bordered).disabled(busy) } }
+                }
+                HStack {
+                    TextField("先生に伝えたいことを相談", text: $input).textFieldStyle(.roundedBorder)
+                    Button("送信") { ask(input, "「\(input)」を診察で伝えるメモに追加しました。", input); input = "" }
+                        .buttonStyle(.borderedProminent).disabled(busy || input.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
             }
         }.padding()
         .sheet(isPresented: $report) { ReportView(text: reportText(live)) }
+        .onDisappear { _ = recorder.stop(); recording = false }
     }
 }
 

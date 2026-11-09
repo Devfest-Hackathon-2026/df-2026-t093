@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 // pendant-api（origin/server の server/）の呼び出し。Android の Api.kt と同じ動き。
@@ -10,12 +11,16 @@ enum Api {
     static let token = secrets["ApiToken"] ?? ""
     static var enabled: Bool { !base.isEmpty && !token.isEmpty }
 
-    static func call<T: Decodable>(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws -> T {
+    /// wav を渡すと JSON の代わりに音声（audio/wav）をそのまま本文に送る。
+    static func call<T: Decodable>(_ method: String, _ path: String, _ body: [String: Any]? = nil, wav: Data? = nil) async throws -> T {
         var r = URLRequest(url: URL(string: base.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + path)!)
         r.httpMethod = method
         r.timeoutInterval = 30 // Gemini は数秒かかる。止まったら台本に切り替える
         r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        if let body {
+        if let wav {
+            r.httpBody = wav
+            r.setValue("audio/wav", forHTTPHeaderField: "Content-Type")
+        } else if let body {
             r.httpBody = try JSONSerialization.data(withJSONObject: body)
             r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
@@ -44,7 +49,7 @@ private struct MemoDTO: Decodable { let text: String }
 private struct ClinicDTO: Decodable { let period_start, period_end: String; let concerns: [String] }
 private struct AskDTO: Decodable {
     struct M: Decodable { let text: String }
-    let answer: M
+    let question, answer: M
     let memos: [MemoDTO]
 }
 
@@ -57,6 +62,8 @@ private struct AskDTO: Decodable {
     @Published var cloud = false
     @Published var memo: [String] = []
     @Published var error: String?
+    @Published var readAloud = true // 返答を読み上げる（設定タブ）
+    private let synth = AVSpeechSynthesizer()
     private var latest = "2026-11-09"
 
     func load() async {
@@ -79,6 +86,23 @@ private struct AskDTO: Decodable {
         memo = o.memos.map(\.text)
         return o.answer.text
     }
+
+    /// 声で相談する。音声をそのまま Gemini に渡し、(聞き取った文, 返答) を返す。クラウドがオンのときだけ使える。
+    func askVoice(_ wav: Data) async throws -> (String, String) {
+        let o: AskDTO = try await Api.call("POST", "/assistant/voice", wav: wav)
+        memo = o.memos.map(\.text)
+        return (o.question.text, o.answer.text)
+    }
+
+    func say(_ s: String) {
+        guard readAloud else { return }
+        synth.stopSpeaking(at: .immediate)
+        let u = AVSpeechUtterance(string: s)
+        u.voice = AVSpeechSynthesisVoice(language: "ja-JP")
+        synth.speak(u)
+    }
+
+    func hush() { synth.stopSpeaking(at: .immediate) }
 
     func setCloud(_ on: Bool) async throws {
         cloud = (try await Api.call("PATCH", "/settings", ["cloud_enabled": on]) as SettingsDTO).cloud_enabled

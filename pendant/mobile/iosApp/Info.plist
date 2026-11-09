@@ -14,6 +14,8 @@
 	<key>LSRequiresIPhoneOS</key><true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>ペンダントを探して接続し、録音データを受け取るために Bluetooth を使います。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>要約タブで、先生に伝えたいことを声で相談するために使います。録音した声は送信後に端末から消します。</string>
 	<key>UILaunchScreen</key><dict><key>UIColorName</key><string>LaunchBackground</string></dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array><string>UIInterfaceOrientationPortrait</string></array>

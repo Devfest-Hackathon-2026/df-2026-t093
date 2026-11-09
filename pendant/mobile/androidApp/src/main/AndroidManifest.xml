@@ -8,6 +8,8 @@
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
     <!-- pendant-api（server/）に接続する。Gemini に送るかどうかは設定の「クラウドに送信する」でサーバー側が判定する -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 要約タブの「声で相談」。録音した声は送信してすぐ捨て、端末には残さない -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:allowBackup="false"

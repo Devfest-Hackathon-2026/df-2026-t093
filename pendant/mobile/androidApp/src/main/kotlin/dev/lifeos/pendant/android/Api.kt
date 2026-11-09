@@ -21,17 +21,23 @@ import java.util.Locale
 object Api {
     val enabled get() = BuildConfig.API_BASE.isNotEmpty() && BuildConfig.API_TOKEN.isNotEmpty()
 
-    suspend fun call(method: String, path: String, body: JSONObject? = null): String = withContext(Dispatchers.IO) {
+    /** [wav] を渡すと JSON の代わりに音声（audio/wav）をそのまま本文に送る。 */
+    suspend fun call(method: String, path: String, body: JSONObject? = null, wav: ByteArray? = null): String = withContext(Dispatchers.IO) {
         val c = URL(BuildConfig.API_BASE.trimEnd('/') + path).openConnection() as HttpURLConnection
         try {
             c.requestMethod = method
             c.connectTimeout = 10_000
             c.readTimeout = 30_000 // Gemini は数秒かかる。止まったら台本に切り替える
             c.setRequestProperty("Authorization", "Bearer ${BuildConfig.API_TOKEN}")
-            if (body != null) {
+            val (bytes, type) = when {
+                wav != null -> wav to "audio/wav"
+                body != null -> body.toString().toByteArray() to "application/json"
+                else -> null to null
+            }
+            if (bytes != null) {
                 c.doOutput = true
-                c.setRequestProperty("Content-Type", "application/json")
-                c.outputStream.use { it.write(body.toString().toByteArray()) }
+                c.setRequestProperty("Content-Type", type)
+                c.outputStream.use { it.write(bytes) }
             }
             val code = c.responseCode
             val text = (if (code < 400) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
@@ -62,6 +68,7 @@ object Live {
     var cloud by mutableStateOf(false)
     val memo = mutableStateListOf<String>()
     var error by mutableStateOf<String?>(null)
+    var readAloud by mutableStateOf(true) // 返答を読み上げる（設定タブ）
     private var latest: LocalDate = LocalDate.of(2026, 11, 9)
 
     suspend fun load() {
@@ -81,6 +88,13 @@ object Live {
         val o = JSONObject(Api.call("POST", "/assistant/messages", JSONObject().put("text", q)))
         setMemo(o.getJSONArray("memos"))
         return o.getJSONObject("answer").getString("text")
+    }
+
+    /** 声で相談する。音声をそのまま Gemini に渡し、(聞き取った文, 返答) を返す。クラウドがオンのときだけ使える。 */
+    suspend fun askVoice(wav: ByteArray): Pair<String, String> {
+        val o = JSONObject(Api.call("POST", "/assistant/voice", wav = wav))
+        setMemo(o.getJSONArray("memos"))
+        return o.getJSONObject("question").getString("text") to o.getJSONObject("answer").getString("text")
     }
 
     suspend fun setCloud(on: Boolean) {

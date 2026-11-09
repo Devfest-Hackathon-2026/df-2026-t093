@@ -1,6 +1,10 @@
 package dev.lifeos.pendant.android
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +26,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import dev.lifeos.pendant.UiState
 
@@ -167,6 +173,12 @@ fun PrivacyTab(onDev: () -> Unit) {
             }
         }
         Card(Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) { Text("返答を読み上げる", style = MaterialTheme.typography.titleMedium); Text("要約タブの返答を声でお伝えします", style = MaterialTheme.typography.bodySmall) }
+                Switch(Live.readAloud, { Live.readAloud = it })
+            }
+        }
+        Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Text("録音していることの表示", style = MaterialTheme.typography.titleMedium)
                 Text("録音中はペンダント前面が赤になります。電源が切れると黒になり、周りの方にも分かります。", style = MaterialTheme.typography.bodySmall)
@@ -195,24 +207,58 @@ private val SCRIPTS = listOf(
 
 @Composable
 fun SummaryTab() {
-    val msgs = remember { mutableStateListOf(false to "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。") }
+    val msgs = remember { mutableStateListOf(false to "下の大きなボタンを押して、先生に伝えたいことや気になることを話してください。話し終わったら、もう一度押します。") }
     val memo = Live.memo
     var input by remember { mutableStateOf("") }
     var report by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+    var typing by remember { mutableStateOf(false) }
+    var recording by remember { mutableStateOf(false) }
+    var secs by remember { mutableIntStateOf(0) }
+    val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val list = rememberLazyListState()
+    val recorder = remember { Recorder() }
+    val speaker = remember { Speaker(ctx) }
+    DisposableEffect(Unit) { onDispose { recorder.stop(); speaker.shutdown() } }
     LaunchedEffect(msgs.size, busy) { list.animateScrollToItem(msgs.size) }
-    fun local(q: String, a: String, m: String) { msgs += false to a; if (m !in memo) memo += m }
+
+    fun reply(a: String) { msgs += false to a; speaker.say(a) }
+    fun local(a: String, m: String) { reply(a); if (m !in memo) memo += m }
     fun ask(q: String, a: String, m: String) {
         msgs += true to q
-        if (!Api.enabled) return local(q, a, m)
+        if (!Api.enabled) return local(a, m)
         scope.launch {
             busy = true
-            runCatching { Live.ask(q) }.onSuccess { msgs += false to it }.onFailure { local(q, a + "（サーバーに接続できないため台本で返答）", m) }
+            runCatching { Live.ask(q) }.onSuccess { reply(it) }.onFailure { local(a + "（サーバーに接続できないため台本で返答）", m) }
             busy = false
         }
     }
+    fun stopAndSend() {
+        if (!recording) return
+        recording = false
+        val wav = recorder.stop()
+        if (wav.size < 44 + RATE_BYTES / 2) return reply("短くて聞き取れませんでした。もう一度、ボタンを押してお話しください。")
+        scope.launch {
+            busy = true
+            runCatching { Live.askVoice(wav) }
+                .onSuccess { (q, a) -> msgs += true to q; reply(a) }
+                .onFailure { reply("うまく届きませんでした。もう一度お話しください。（${it.message}）") }
+            busy = false
+        }
+    }
+    fun start() {
+        if (!Api.enabled || !Live.cloud) return reply("声で相談するには、設定で「クラウドに送信する」をオンにしてください。")
+        speaker.stop()
+        recorder.start(); secs = 0; recording = true
+    }
+    val mic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) start() else reply("マイクの使用が許可されていません。設定アプリで許可してください。")
+    }
+    LaunchedEffect(recording) {
+        while (recording) { delay(1000); secs++; if (secs >= 60) stopAndSend() } // 1 回は最大 60 秒
+    }
+
     Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp)) {
@@ -224,11 +270,11 @@ fun SummaryTab() {
             items(msgs) { (mine, text) ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
                     Surface(shape = RoundedCornerShape(16.dp), color = if (mine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer) {
-                        Text(text, Modifier.padding(10.dp).widthIn(max = 300.dp), color = if (mine) Color.White else Color.Unspecified)
+                        Text(text, Modifier.padding(12.dp).widthIn(max = 300.dp), color = if (mine) Color.White else Color.Unspecified, fontSize = 18.sp, lineHeight = 26.sp)
                     }
                 }
             }
-            if (busy) item { Text("考え中…", Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodySmall) }
+            if (busy) item { Text("聞いています…", Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyMedium) }
             if (memo.isNotEmpty()) item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
@@ -238,17 +284,40 @@ fun SummaryTab() {
                 }
             }
         }
-        Button(onClick = { report = true }, Modifier.fillMaxWidth()) { Text("医師向け報告書にまとめる") }
         if (report) ReportDialog(reportText(memo)) { report = false }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SCRIPTS.forEach { sc -> AssistChip(enabled = !busy, onClick = { ask(sc.chip, sc.answer, sc.memo) }, label = { Text(sc.chip) }) }
+        // 録音中はペンダントの表示と同じ赤にする
+        Button(
+            enabled = !busy,
+            onClick = {
+                when {
+                    recording -> stopAndSend()
+                    ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED -> start()
+                    else -> mic.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(84.dp),
+            shape = RoundedCornerShape(42.dp),
+            colors = if (recording) ButtonDefaults.buttonColors(containerColor = Color(0xFFD50000)) else ButtonDefaults.buttonColors(),
+        ) {
+            Text(if (recording) "話し終わったら押す（${secs}秒）" else if (busy) "考えています…" else "押して話す", fontSize = 22.sp)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(input, { input = it }, Modifier.weight(1f), placeholder = { Text("先生に伝えたいことを相談") })
-            Button(enabled = input.isNotBlank() && !busy, onClick = { ask(input, "「$input」を診察で伝えるメモに追加しました。", input); input = "" }) { Text("送信") }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TextButton(onClick = { typing = !typing }) { Text(if (typing) "文字入力を閉じる" else "文字で入力する") }
+            TextButton(onClick = { report = true }) { Text("医師向け報告書にまとめる") }
+        }
+        if (typing) {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SCRIPTS.forEach { sc -> AssistChip(enabled = !busy, onClick = { ask(sc.chip, sc.answer, sc.memo) }, label = { Text(sc.chip) }) }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(input, { input = it }, Modifier.weight(1f), placeholder = { Text("先生に伝えたいことを相談") })
+                Button(enabled = input.isNotBlank() && !busy, onClick = { ask(input, "「$input」を診察で伝えるメモに追加しました。", input); input = "" }) { Text("送信") }
+            }
         }
     }
 }
+
+private const val RATE_BYTES = 32_000 // 16 kHz × 16 bit = 1 秒あたりのバイト数
 
 /** 医師に渡す報告書。チャットではなく、相談で整理したメモと記録の所見だけを1枚にまとめる。 */
 private fun reportText(memo: List<String>) = buildString {
