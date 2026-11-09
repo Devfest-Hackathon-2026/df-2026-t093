@@ -28,7 +28,7 @@ uv run pytest
 - `POST /assistant/messages`: クラウドオンなら直近7日の記録・メモ・会話履歴を踏まえて Gemini が返答。オフならアプリと同じ台本
 - クラウドがオフだと生成系は 409、Gemini 未設定だと 503
 
-ローカルで試す: `GEMINI_API_KEY=... uv run uvicorn app.main:app --reload`（モデルは `GEMINI_MODEL`、既定 `gemini-2.5-flash`）
+ローカルで試す: `GEMINI_API_KEY=... uv run uvicorn app.main:app --reload`（モデルは `GEMINI_MODEL`、既定 `gemini-3.8-flash`。2.5-flash は 2026-10-20 に提供終了）
 
 ## 認証（デモ用）
 

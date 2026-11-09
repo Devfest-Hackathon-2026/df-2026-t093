@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 SYSTEM = (
     "あなたは高齢者の在宅介護を手伝うアシスタントです。"

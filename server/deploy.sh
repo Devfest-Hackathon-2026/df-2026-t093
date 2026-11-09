@@ -7,9 +7,19 @@ PROJECT="${PROJECT:?PROJECT=<GCP プロジェクト ID> を指定してくださ
 REGION="${REGION:-asia-northeast1}"
 SERVICE="${SERVICE:-pendant-api}"
 GEMINI_LOCATION="${GEMINI_LOCATION:-global}"
-API_TOKEN="${API_TOKEN:-$(openssl rand -hex 24)}"
+GEMINI_MODEL="${GEMINI_MODEL:-gemini-3.8-flash}"
 
 gcloud config set project "$PROJECT" >/dev/null
+
+# API_TOKEN: 指定がなければ既存サービスのものを引き継ぐ。初回だけ新しく作る
+if [ -z "${API_TOKEN:-}" ]; then
+  API_TOKEN=$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json 2>/dev/null \
+    | python3 -c 'import sys, json
+d = json.load(sys.stdin)
+env = d["spec"]["template"]["spec"]["containers"][0].get("env", [])
+print(next((e.get("value", "") for e in env if e["name"] == "API_TOKEN"), ""))' 2>/dev/null || true)
+  API_TOKEN="${API_TOKEN:-$(openssl rand -hex 24)}"
+fi
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
   artifactregistry.googleapis.com aiplatform.googleapis.com
 
@@ -24,7 +34,7 @@ done
 # SQLite (デモ) なのでインスタンスは 1 台に固定する
 gcloud run deploy "$SERVICE" --source . --region "$REGION" \
   --allow-unauthenticated --max-instances 1 --memory 512Mi \
-  --set-env-vars "SEED_DEMO=1,API_TOKEN=${API_TOKEN},GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT},GOOGLE_CLOUD_LOCATION=${GEMINI_LOCATION}"
+  --set-env-vars "SEED_DEMO=1,API_TOKEN=${API_TOKEN},GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT},GOOGLE_CLOUD_LOCATION=${GEMINI_LOCATION},GEMINI_MODEL=${GEMINI_MODEL}"
 
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
 echo
