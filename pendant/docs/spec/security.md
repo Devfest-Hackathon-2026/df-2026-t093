@@ -13,7 +13,7 @@
 - OTA、MCUboot、パーティション、ウォッチドッグ、時刻: [firmware.md](./firmware.md)
 - レコード形式、BLE 同期: [formats.md](./formats.md)
 - 赤 / 黒の終端表示: [terminal-indicator.md](./terminal-indicator.md)
-- 技適・SIG・CE・FCC・EN 18031: [plan/compliance.md](../plan/compliance.md)
+- 技適・SIG・CE・FCC・EN 18031: plan/compliance.md
 
 確度の凡例: **確定** = 決定済み。**方針** = 向きは決まっているが数値・手順は未定。**仮置き** = 実測で決める。
 
@@ -215,4 +215,4 @@ ERASEPROTECT は本当に必要なときだけ
 | APPROTECT の評価を始める条件（OTA と復旧の試験が済んだか）。キット版（SWD を購入者に開けておくか）は販売形態の保留に従う | #11 |
 | CRACEN の稼働電流（暗号化の消費エネルギー） | #26（Phase 1 で測る） |
 | 販売表示と規約の法的確認（日本と海外、専門家） | 新規 issue 候補: 常時録音の表示・規約の法的確認（#16 の販売表現と併せる） |
-| EN 18031: 利用者がパスワードを設定しない設計（LESC + OOB）の扱いを試験所に確認 | #15、[plan/compliance.md](../plan/compliance.md) |
+| EN 18031: 利用者がパスワードを設定しない設計（LESC + OOB）の扱いを試験所に確認 | #15、plan/compliance.md |

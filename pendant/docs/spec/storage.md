@@ -101,11 +101,10 @@ p は保存デューティ（1 日のうち NAND に保存する時間の割合�
 
 **8 Gbit（縮退側 16 kbps が ASR で使えなかった場合の戻り先、§7.3）**: Winbond W25N08LW（WSON-8 8×6。標準リード 36 週・最小 126〜480 個）、XTX XT26Q18D（DPD なし）、Alliance AS5F18G04SNDB-10LIN（LGA-8 8×6）。
 
-**2026-10-23 の履歴:** Alliance AS5F18G04SNDB-10LIN（8 Gbit・4 KiB page・LGA-8）をハッカソンの先行評価候補としていた。LGA には中央 exposed pad がないため、Standard の WSON 中央 paste を含む footprint を無検証で流用できない。[Alliance 公式 Rev 3.2](https://www.alliancememory.com/wp-content/uploads/AllianceMemory_AS5F_QSPI_NAND_Flash_3V-1Gb-8Gb_1p8V-2Gb-4Gb-8Gb_Ver3.2_Jan2026-revised.pdf)。
 
 **2026-10-27 のデモ設計:** ユーザーの短時間・低コスト優先により、デモ機の NAND は **F35UQA512M-WWR、512 Mbit（64 MiB）**へ変更する。1.7〜1.95 V、2 KiB + 64 B/page、64 page/block、512 block。内部 ECC は 512 B + 16 B ごとに 1 bit 訂正（初期状態で有効）、出荷時の有効 block は 502〜512 個。DPD 命令は参照 Rev 1.1 に見当たらず、待機は 10 µA typ / 50 µA max なので TPS22917 による power gate を使う。[Longsys の型番表](https://www.longsys.com/products/embedded-storage/micro-storage/spi-nand-flash.html)、[メーカー DS Rev 1.1](https://cdn.icstop.com/upload/pdfs/e7/de/e7decc6bb7e9f2384da286e27083f166.pdf)。
 
-これは**デモの設計採用**で、未購入・未実装。2 KiB page と DPD 命令のない参照仕様は製品選定基準（§2.4）の例外として扱い、製品の 4 Gbit 基準・48 h 目標は変更しない。内蔵 ECC は旧 8 Gbit 候補の 8 bit 訂正より弱い。JEDEC ID、初期不良 block の読み出し、ECC status、program / erase status、gate 復帰、実効容量・消費と電源切替を実機で確認する。Standard の同型番 footprint は流用候補だが、exposed pad の扱いと solder paste を製造前に確認する。[試作計画 §6](../plan/premium-hackathon.md#63-調達の現状と優先順位)。
+これは**デモの設計採用**で、未購入・未実装。2 KiB page と DPD 命令のない参照仕様は製品選定基準（§2.4）の例外として扱い、製品の 4 Gbit 基準・48 h 目標は変更しない。内蔵 ECC は旧 8 Gbit 候補の 8 bit 訂正より弱い。JEDEC ID、初期不良 block の読み出し、ECC status、program / erase status、gate 復帰、実効容量・消費と電源切替を実機で確認する。Standard の同型番 footprint は流用候補だが、exposed pad の扱いと solder paste を製造前に確認する。
 
 ### 2.4 製品向け選定基準（確定）
 
@@ -509,7 +508,7 @@ free   = リングの空き（消去済みのブロックだけ数える。予�
 
 CR2032 運転の追加規則（Premium）:
 
-現アプリは内蔵 RRAM backend で、以下は外付け NAND へ接続するときの要件。`ring_pre_erase` は data block 用であり、metadata commit／起動更新／reclaim の erase を除去しない。**新規 program／erase の許可は backend の各 command 直前で判定**し、発行済み command は最悪時間の電源余裕で完了させる。未検証の COIN 書込みは閉じ、有限の保存範囲と欠落報告を持つ（[Premium 試作計画 §7](../plan/premium-hackathon.md#7-fw-の最小統合と見落としやすい経路)）。
+現アプリは内蔵 RRAM backend で、以下は外付け NAND へ接続するときの要件。`ring_pre_erase` は data block 用であり、metadata commit／起動更新／reclaim の erase を除去しない。**新規 program／erase の許可は backend の各 command 直前で判定**し、発行済み command は最悪時間の電源余裕で完了させる。未検証の COIN 書込みは閉じ、有限の保存範囲と欠落報告を持つ。
 
 - CAP 運転中に消去済み block を確保し、CR2032 運転はそこへフル page 単位で書いて電源回復を待つ。chunk の header / CRC / commit と A/B metadata も同じ電力予算・回復待ちに含める。
 - page を分散しても erase パルスは小さくならない。消去済み容量と保存レートから CR2032 中の継続可能時間を計算し、予備 block・ヘッダ・運用中の bad block も差し引く。

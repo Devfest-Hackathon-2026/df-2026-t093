@@ -63,7 +63,7 @@
 ```
 
 - 利用者が USB で書く経路は作らない。理由: nRF54L15 自身に USB が無く、XIAO の USB-C は SAMD11 の CMSIS-DAP / UART ブリッジにつながるため、ドラッグ＆ドロップ（UF2 / MSC）の書込みが成り立たない。iOS には USB の経路が無い。
-- dogfooding の本筋は Fanstel BC15M の自作基板。書込みは SWD パッドから行う（1.8 V のターゲットに合わせる方法と、XIAO の SAMD11 を SWD プローブとして流用できるかは未検証: [plan/prototype.md](../plan/prototype.md)、[board.md](./board.md)）。
+- dogfooding の本筋は Fanstel BC15M の自作基板。書込みは SWD パッドから行う（1.8 V のターゲットに合わせる方法と、XIAO の SAMD11 を SWD プローブとして流用できるかは未検証: plan/prototype.md、[board.md](./board.md)）。
 - 出荷前に書くものと、初回起動時の秘密の作り方は [security.md §6](./security.md)。
 
 ---
@@ -307,7 +307,7 @@ GRTC で足りるなら載せない。次のいずれかが成り立つなら載
 | `fw/src/crypto_bench.c` | [security.md §5](./security.md) |
 | `fw/src/store.c`、`tools/ring_dump.py` | [storage.md](./storage.md) |
 | `fw/src/audio.c` | [audio.md](./audio.md) |
-| `fw/src/marker.c`、`fw/src/scenario.c`、`fw/measure.conf` | [plan/prototype.md](../plan/prototype.md)（測定用ビルド）、ピンは [board.md](./board.md) |
+| `fw/src/marker.c`、`fw/src/scenario.c`、`fw/measure.conf` | plan/prototype.md（測定用ビルド）、ピンは [board.md](./board.md) |
 
 ---
 

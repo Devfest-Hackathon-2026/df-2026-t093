@@ -12,8 +12,6 @@ lifeOS Pendant の製品レベルの仕様。このファイルが持つもの: 
 - OTA・MCUboot・時刻管理: [firmware.md](./firmware.md)
 - 脅威モデル・ペアリング・鍵: [security.md](./security.md)
 - アンテナ・TX 電力: [rf.md](./rf.md)、ピン割当・測定点: [board.md](./board.md)、筐体・防水・Solar ボタン: [mechanical.md](./mechanical.md)
-- 試作の段階: [../plan/prototype.md](../plan/prototype.md)、技適・SIG・CE・FCC: [../plan/compliance.md](../plan/compliance.md)
-- 決定の経緯: [../decisions.md](../decisions.md)
 
 確度の表記: **確定**（動かさない）/ **方針**（向きは決まり、数値や部品が未定）/ **仮置き**（実測で決める値）。
 
@@ -95,7 +93,7 @@ Solar は全 SKU に必須の機構ではなく、**Premium を成立させる�
 
 ### §2.2 差を電源・保存・筐体に限る（確定）
 
-Bluetooth の構成は、Standard と Premium で同じにする。2 つの差は電源・保存・筐体だけにする。理由: Bluetooth SIG の Declaration は、同じ Design を別製品に使うと 2 件目の追加料金が $0 になる見込みで、認証を 1 回で済ませられる（[../plan/compliance.md](../plan/compliance.md)）。
+Bluetooth の構成は、Standard と Premium で同じにする。2 つの差は電源・保存・筐体だけにする。理由: Bluetooth SIG の Declaration は、同じ Design を別製品に使うと 2 件目の追加料金が $0 になる見込みで、認証を 1 回で済ませられる。
 
 FW は可能な限り共通にし、SKU の差は次の 3 つの backend として分離する。
 
@@ -109,7 +107,7 @@ NAND のドライバと ring は両 SKU で同じで、違いは容量と電源�
 
 ### §2.3 作る順番（確定）
 
-通常の dogfooding は両 SKU を作り、知人に好きな方を選んで使ってもらう。**2026-10-23 の優先順位変更により、11 月中旬のハッカソン向け Premium は Standard 完成を待たず先行する。** 共通コアの検証と電源・機構を並行する。実発電する Solar、外観、HSL＋非常用ボタン電池を必須とし、USB 給電は設けない（[Premium 試作計画](../plan/premium-hackathon.md)）。これは 48 h／72 h の製品検証を完了したという意味ではない。
+通常の dogfooding は両 SKU を作り、知人に好きな方を選んで使ってもらう。**ハッカソン向け Premium は Standard 完成を待たず先行する。** 共通コアの検証と電源・機構を並行する。実発電する Solar、外観、HSL＋非常用ボタン電池を必須とし、USB 給電は設けない。これは 48 h／72 h の製品検証を完了したという意味ではない。
 
 ## §3 共通コア
 
@@ -117,8 +115,8 @@ NAND のドライバと ring は両 SKU で同じで、違いは容量と電源�
 
 | 項目 | 内容 | 仕様 |
 |---|---|---|
-| MCU / BLE | Nordic nRF54L15。dogfooding の本筋は Fanstel BC15M モジュール（自宅リフロー、1.8 V の rail で直接動かす）。XIAO nRF54L15 は開発専用 | [board.md](./board.md)、[../plan/prototype.md](../plan/prototype.md) |
-| マイク | TDK T5848（I²S 出力）を 1 個。AAD で待ち、音で起こす（運用は方針。T5838 から替えた理由は [decisions.md H7](../decisions.md)） | [audio.md](./audio.md) |
+| MCU / BLE | Nordic nRF54L15。dogfooding の本筋は Fanstel BC15M モジュール（自宅リフロー、1.8 V の rail で直接動かす）。XIAO nRF54L15 は開発専用 | [board.md](./board.md) |
+| マイク | TDK T5848（I²S 出力）を 1 個。AAD で待ち、音で起こす（運用は方針） | [audio.md](./audio.md) |
 | system rail | TI TPS62840 で 1.8 V。1.9 V 化は未決 | [power.md §2](./power.md) |
 | ストレージ | 1.8 V の生 SPI NAND。容量だけが違う | [storage.md](./storage.md) |
 | 録音形式 | 8 kHz・mono・IMA-ADPCM 32 kbps。上限は 32 kbps。縮退側は 16 kbps 級（Premium） | [audio.md §5・§6](./audio.md) |
@@ -147,7 +145,7 @@ NAND のドライバと ring は両 SKU で同じで、違いは容量と電源�
 
 **スマホが無くても録音が続く。48 h 級のオフライン buffer を保証し、Solar で通常は充電作業が要らない。**
 
-**11 月のハッカソン用デモ機は例外:** 短時間の実演を目的に 512 Mbit の F35UQA512M-WWR を設計採用する。48 h 保存はデモ機で保証しない。上記は製品目標として残す（[試作計画](../plan/premium-hackathon.md#63-調達の現状と優先順位)）。
+**11 月のハッカソン用デモ機は例外:** 短時間の実演を目的に 512 Mbit の F35UQA512M-WWR を設計採用する。48 h 保存はデモ機で保証しない。上記は製品目標として残す。
 
 - 前面の Solar パネルが、そのまま押せるボタンになる（[mechanical.md](./mechanical.md)）。
 - 通常は Solar と 120 F の cap だけで動く。日照が足りず cap が減ると、非常用の CR2032 に自動で退避し、cap が回復すると戻る。
@@ -230,8 +228,8 @@ NAND のドライバと ring は両 SKU で同じで、違いは容量と電源�
 
 | 部品 | 型番・仕様 | 確度 |
 |---|---|---|
-| Solar | 前面で実発電する panel。従来の φ36 mm / 2 V / 80 mW 級は目安で、メーカー型番・Voc・納期は未固定。[調達候補](../plan/premium-hackathon.md#6-solar-と調達の調査) | 機能は必須、型番・実発電は未確定 |
-| harvester | TI BQ25505（MPPT + 充電 + 一次電池用 mux の gate driver）＋TPS62840。今回の試作は BQ25570 へ変更しない | 方針（[比較根拠](../plan/premium-hackathon.md#3-電源構成と-pmic-の判断)） |
+| Solar | 前面で実発電する panel。従来の φ36 mm / 2 V / 80 mW 級は目安で、メーカー型番・Voc・納期は未固定。調達候補 | 機能は必須、型番・実発電は未確定 |
+| harvester | TI BQ25505（MPPT + 充電 + 一次電池用 mux の gate driver）＋TPS62840。今回の試作は BQ25570 へ変更しない | 方針（比較根拠） |
 | 主蓄電 | Eaton HSL1225-3R8127-R（120 F、最大定格 3.8 V、最低定格 2.5 V、最低許容 2.2 V、φ12.5 × 25 mm 公称、約 5.4 g）。外形公差・リードを別に見る | 確定 |
 | 非常用電池 | Panasonic CR2032（225 mAh）。https://energy.panasonic.com/jp/business/products/lithium/coin-cr-standard/models/CR2032 | 確定 |
 | power mux | common-source back-to-back PMOS **2 ペア＝4 素子／dual package 2 個**。secondary は VSTOR から。CSD75208W1015 ×2 を第一評価候補にする | 接続方針、品番・実装・一次電池の逆流保護は要検証 |
@@ -244,7 +242,7 @@ NAND のドライバと ring は両 SKU で同じで、違いは容量と電源�
 
 ## §7 初号機の Go/No-Go
 
-初号機の最低条件（11 項目。対象 SKU つき）は [../plan/prototype.md §9](../plan/prototype.md) が持つ。製品としての要点は次のとおり。
+製品としての要点は次のとおり。
 
 - Premium の電力は、**CR2032 を使わず無日照 72 h** を守れることで判定する。屋外での消費分の回収は別に確認する（§5.1、[power.md §7.4・§7.5](./power.md)）。
 - Standard は、NAND を含む電力モデルで、約 1 年の条件（ビットレート、p）が成り立つこと（§8）。
@@ -277,7 +275,7 @@ Standard の電池寿命の見通し「約 1 年」は、CR2477 を **3 V × 1 A
 
 ## §9 提供形態
 
-- **販売形態は保留（確定）。** SIG と試験所から回答が来るまで決めない。XIAO を同梱するキットは採らない（開発専用）。はんだ付けが要らない組立形態（K1）は、販売形態が決まるまで扱わない。経緯と調査は [../plan/compliance.md](../plan/compliance.md)。
+- **販売形態は保留（確定）。** SIG と試験所から回答が来るまで決めない。XIAO を同梱するキットは採らない（開発専用）。はんだ付けが要らない組立形態（K1）は、販売形態が決まるまで扱わない。
 - 販売地域は日本と海外。使うモジュールは、技適・FCC・CE などを取得済みであること（確定）。
 - 筐体・箱・説明書に常時録音であることを書く。販売表示と規約の法的確認は、日本と海外で専門家に取る（[security.md §9](./security.md)）。
 - 知人への無償配布（dogfooding）は、SIG への問い合わせには含めない。
@@ -286,10 +284,10 @@ Standard の電池寿命の見通し「約 1 年」は、CR2477 を **3 V × 1 A
 
 | 項目 | 状態 |
 |---|---|
-| 販売形態（認証済みのモジュールの扱い、SIG の Declaration、CE の製造者責任、FCC の条件）。SIG・試験所への書面確認 | #15、[../plan/compliance.md](../plan/compliance.md) |
+| 販売形態（認証済みのモジュールの扱い、SIG の Declaration、CE の製造者責任、FCC の条件）。SIG・試験所への書面確認 | #15 |
 | Standard の NAND 容量（512 Mbit か 1 Gbit） | 新規 issue 候補: NAND 型番の選定（Standard 512 Mbit〜1 Gbit / Premium 4 Gbit） |
 | Standard の電池寿命（約 1 年）を NAND 前提で出し直す。16 kbps での p の上限 | #17、#27 |
-| Premium の電源 IC と電源回路 | 今回は BQ25505＋TPS62840。しきい値・逆流保護・source 信号変換は [Premium 試作計画](../plan/premium-hackathon.md) の評価候補 |
+| Premium の電源 IC と電源回路 | 今回は BQ25505＋TPS62840。しきい値・逆流保護・source 信号変換は評価候補 |
 | AirTag 互換の可否（E1）。Standard の Z の実測（並置の想定 14.5 mm、余裕 0.5 mm） | #24、[mechanical.md §7.5・§8](./mechanical.md) |
 | privacy latch の機構（スライドか磁気式）と、封止との両立 | 新規 issue 候補: privacy latch の機構（[mechanical.md](./mechanical.md)。配線部品は [board.md §6.1](./board.md)） |
 | 要求する時刻精度（スマホに同期しない最長の区間で、何秒まで許すか） | 新規 issue 候補: 時刻精度の要求値（[firmware.md §5.4](./firmware.md) の RTC 判断に使う） |

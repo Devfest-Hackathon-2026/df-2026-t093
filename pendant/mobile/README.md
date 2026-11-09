@@ -7,7 +7,16 @@ bash mobile/verify.sh        # 全部。最後に PASS / FAIL / SKIPPED の表
 MOBILE_REQUIRE_IOS=1 bash mobile/verify.sh   # iOS を飛ばしたら失敗にする
 ```
 
-`verify.sh` は shared のテスト → C interop → `:androidApp:assembleDebug` と merged manifest に `android.permission.INTERNET` が無いことの確認 → （macOS + Xcode + iOS Simulator runtime があるとき）`:shared:iosSimulatorArm64Test` と `xcodebuild` による iosApp の build、の順に走り、最初の失敗で非 0 で終わります。iOS を SKIPPED にするのは、macOS でない・xcodebuild が無い・Simulator runtime が無い、のときだけです（PASS とは表示しません）。`JAVA_HOME`（既定は環境変数、無ければ Homebrew の openjdk@17、@21）と `ANDROID_HOME` / `ANDROID_SDK_ROOT`（既定 `/opt/homebrew/share/android-commandlinetools`）は `env.sh` が **そのプロセスの中でだけ** export します。`~/.gradle/gradle.properties`、シェルの rc、git の global 設定には触れません。compileSdk / targetSdk は 36、minSdk は 31 です。
+`verify.sh` は shared のテスト → C interop → `:androidApp:assembleDebug` → （macOS + Xcode + iOS Simulator runtime があるとき）`:shared:iosSimulatorArm64Test` と `xcodebuild` による iosApp の build、の順に走り、最初の失敗で非 0 で終わります。iOS を SKIPPED にするのは、macOS でない・xcodebuild が無い・Simulator runtime が無い、のときだけです（PASS とは表示しません）。`JAVA_HOME`（既定は環境変数、無ければ Homebrew の openjdk@17、@21）と `ANDROID_HOME` / `ANDROID_SDK_ROOT`（既定 `/opt/homebrew/share/android-commandlinetools`）は `env.sh` が **そのプロセスの中でだけ** export します。`~/.gradle/gradle.properties`、シェルの rc、git の global 設定には触れません。compileSdk / targetSdk は 36、minSdk は 31 です。
+
+## pendant-api（server/）への接続
+
+URL とトークンは Git に入れない。未設定ならアプリは固定データ（ハリボテ）と台本で動く。
+
+- Android: `pendant/mobile/local.properties` に `pendant.api.base=https://…` と `pendant.api.token=…`
+- iOS: `iosApp/Sources/Secrets.plist`（`ApiBase` / `ApiToken` の 2 キー、文字列）
+
+Gemini に送るかどうかは、設定タブの「クラウドに送信する」（`PATCH /settings`）でサーバーが判定する。
 
 ## 構成と責任の境界
 
@@ -69,7 +78,7 @@ CRC と commit が正しいレコードは、type ごとの decode より先に�
 | demo transport（登録 → 同期 → 一覧 → 切断と再接続 → gap） | ○ | | ○ | ○（simulator で demo 起動を確認。フローは shared のテストが simulator で走る） | 未検証 |
 | Android の BLE（`AndroidBleLink`、権限） | | | ○（build のみ） | | 未検証 |
 | iOS の BLE（`CoreBluetoothLink`） | | | | ○（build のみ。simulator に BLE は無い） | 未検証 |
-| merged manifest に INTERNET が無い、allowBackup=false、backup 除外 | | | ○ | ○（backup 除外・ファイル保護は実装のみ） | 未検証 |
+| allowBackup=false、backup 除外（INTERNET は pendant-api 接続のため 2026-11-09 に追加） | | | ○ | ○（backup 除外・ファイル保護は実装のみ） | 未検証 |
 | CI（`.github/workflows/mobile.yml`） | | | | | 実行結果を確認するまで未検証。required gate ではない |
 
 ## 照合した FW

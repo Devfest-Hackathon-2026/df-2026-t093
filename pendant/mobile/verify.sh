@@ -32,12 +32,6 @@ else
 fi
 
 step "3a Android assembleDebug" gradle :androidApp:assembleDebug
-no_internet() {
-  local m; m=$(ls androidApp/build/intermediates/merged_manifests/debug/*/AndroidManifest.xml 2>/dev/null | head -1)
-  [ -n "$m" ] || { echo "merged manifest not found"; return 1; }
-  if grep -q 'android.permission.INTERNET' "$m"; then echo "INTERNET is in $m"; return 1; fi
-}
-step "3b merged manifest has no INTERNET" no_internet
 
 ios_skip=""
 if [ "$(uname -s)" != Darwin ]; then ios_skip="not macOS"

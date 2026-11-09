@@ -5,3 +5,4 @@ local.properties
 *.xcuserstate
 xcuserdata/
 interop/.build/
+iosApp/Sources/Secrets.plist

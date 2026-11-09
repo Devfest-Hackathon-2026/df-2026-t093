@@ -2,17 +2,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Scan only for the pendant's service, never for location; no network permission is declared: nothing leaves the phone. -->
+    <!-- Scan only for the pendant's service, never for location. -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+    <!-- pendant-api（server/）に接続する。Gemini に送るかどうかは設定の「クラウドに送信する」でサーバー側が判定する -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 要約タブの「声で相談」。録音した声は送信してすぐ捨て、端末には残さない -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Anam">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

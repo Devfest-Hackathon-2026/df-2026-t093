@@ -15,7 +15,7 @@ V_NRF_MIN = 1.75       # nRF54L15 VDD,POR (PS v1.0 sec 11.14.1)
 R_U5 = (0.26 + 0.12)   # TPS628438 RDSON(HS) max + inductor DCR, ohm (kit: nRF on the U5 path)
 
 # name: (I on the nRF rail [A], I on the 1.8 V rail [A], T [s]).
-# BLE and the CPU share are ASSUME; the NOR numbers are the W25Q256JW typ / max of docs/archive/32_NOR_W25Q.md (12 / 20 mA, tPP 0.8 / 5 ms,
+# BLE and the CPU share are ASSUME; the NOR numbers are the W25Q256JW typ / max of the W25Q256JW datasheet (12 / 20 mA, tPP 0.8 / 5 ms,
 # 64 KB erase 200 ms / 2 s).
 PULSES = {
     "BLE": (8e-3, 0.3e-3, 3e-3),

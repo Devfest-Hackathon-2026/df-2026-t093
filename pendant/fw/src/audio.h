@@ -10,7 +10,7 @@ struct audio_stats {
 	uint32_t last_rms2; /* mean square of the last block */
 };
 
-/* How much of the chain runs, so the measurement build can separate the costs (docs/plan/prototype.md §2.4). */
+/* How much of the chain runs, so the measurement build can separate the costs. */
 enum audio_mode { AUDIO_PDM_ONLY, AUDIO_ENCODE, AUDIO_FULL };
 void audio_set_mode(enum audio_mode m);
 

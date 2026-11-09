@@ -1,14 +1,14 @@
 import SwiftUI
 import Shared
 
-private func utc(_ ms: Int64?) -> String {
+func utc(_ ms: Int64?) -> String {
     guard let ms else { return "時刻不明" }
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd HH:mm:ss'Z'"
     return f.string(from: Date(timeIntervalSince1970: Double(ms) / 1000))
 }
 
-private func status(_ s: UiState) -> String {
+func status(_ s: UiState) -> String {
     switch s.conn {
     case .unregistered: return "未登録"
     case .scanning: return "scan 中"
@@ -22,15 +22,26 @@ private func status(_ s: UiState) -> String {
 
 struct ContentView: View {
     @EnvironmentObject var model: AppModel
+    @State private var intro = true
 
     var body: some View {
+        ZStack {
+            main
+            if intro { IntroView { withAnimation(.easeOut(duration: 0.3)) { intro = false } }.transition(.opacity) }
+        }
+        .task { await Live.shared.load() }
+    }
+
+    private var main: some View {
         VStack(spacing: 0) {
             if model.state.settings.demo { Text("DEMO").frame(maxWidth: .infinity).padding(8).background(Color.red).foregroundColor(.white) }
             TabView {
-                SyncView().tabItem { Text("同期") }
-                ListView().tabItem { Text("一覧") }
-                SettingsView().tabItem { Text("設定") }
-            }
+                HomeView().tabItem { Label("ホーム", systemImage: "house") }
+                SummaryView().tabItem { Label("要約", systemImage: "sparkles") }
+                LogsView().tabItem { Label("ログ", systemImage: "text.bubble") }
+                ClinicView().tabItem { Label("診療", systemImage: "cross.case") }
+                PrivacyView().tabItem { Label("設定", systemImage: "gearshape") }
+            }.tint(pendantTeal)
         }
     }
 }

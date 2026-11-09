@@ -1,0 +1,8 @@
+<resources>
+    <!-- 起動直後は黒一色にし、そのまま Compose の起動アニメーション（Intro.kt）へつなぐ -->
+    <style name="Theme.Anam" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/anam_bg</item>
+        <item name="android:windowSplashScreenBackground">@color/anam_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+</resources>

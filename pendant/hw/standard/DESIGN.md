@@ -35,7 +35,7 @@ CR2477 ─R1(R_BAT)─┬─R2(0Ω) / U1 LM66100(DNP)─ VBAT_SYS ─┬─ C1 1
 | U2 | TI TPS62840DLCR | SLVSEC6D（2020-03） | `Package_SON:Texas_VSON-HR-8_1.5x2mm_P0.5mm` | DLC は VSON-HR（SON-8）。ピッチ 0.5 mm |
 | U4、U6、U9 | TI TPS22917DBVR | SLVSDW8B（2021-12） | SOT-23-6 | アクティブ High。**TPS22917L はアクティブ Low なので誤発注しない** |
 | U5 | Lexar F35UQA512M-WWR（代替: MX35UF1GE4AD-Z4I6、GD5F1GQ5REYIGR。ピン同一） | Lexar Rev 1.1（2022-02）、Macronix REV 1.7（2026-02）、GD Rev 1.4（2021-12） | WSON-8 8×6 | EP の接続先はどのデータシートにも無い（§3.4） |
-| U8 | TDK MMICT5848-00-012（T5848、I²S、AAD 付き） | DS-000479 | `pendant:TDK_T5848_LGA-8_3.5x2.65mm`（Fig. 3 / 33 から生成。音孔 φ0.6 mm） | **パッドとピンの対応は図からの読み取り**。TDK の STEP か実物で確認する。底面ポート。レジスタは T5838 と同じ（decisions.md H7） |
+| U8 | TDK MMICT5848-00-012（T5848、I²S、AAD 付き） | DS-000479 | `pendant:TDK_T5848_LGA-8_3.5x2.65mm`（Fig. 3 / 33 から生成。音孔 φ0.6 mm） | **パッドとピンの対応は図からの読み取り**。TDK の STEP か実物で確認する。底面ポート。レジスタは T5838 と同じ |
 | U7 | TI SN74AUP3G34DCUR | TI データシート（ti.com/lit/ds/symlink/sn74aup3g34.pdf） | `Package_SO:VSSOP-8_2.3x2mm_P0.5mm`（DCU） | 3 回路。Ioff 0.6 µA max |
 | U10 | Micro Crystal RV-3032-C7 | データシート v1.3（2022-02） | `Package_SON:MicroCrystal_C7_SON-8_1.5x3.2mm_P0.9mm`（DNP） | Application Manual は未読 |
 | U12 | TI DRV8837DSGR | 標準シンボル DRV8837C（同ピン） | 標準 | DNP |

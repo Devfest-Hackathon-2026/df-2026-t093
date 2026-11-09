@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings as AndroidSettings
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,12 +43,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ctl = AppGraph.controller(this)
+        enableEdgeToEdge() // ステータスバーの文字色を背景に合わせる
+        ctl =AppGraph.controller(this)
         setContent {
-            MaterialTheme {
+            MaterialTheme(colorScheme = PendantScheme) {
                 val s by ctl.state.collectAsState()
                 LaunchedEffect(s.settings.demo, granted.value) { apply() }
-                App(s, granted.value, ctl, ::apply, { AppGraph.save(this, it); ctl.updateSettings(it) }, { onGranted -> granted.value = onGranted })
+                var intro by rememberSaveable { mutableStateOf(true) }
+                if (intro) Intro { intro = false }
+                else App(s, granted.value, ctl, ::apply, { AppGraph.save(this, it); ctl.updateSettings(it) }, { onGranted -> granted.value = onGranted })
             }
         }
     }
@@ -55,9 +60,9 @@ class MainActivity : ComponentActivity() {
     override fun onStop() { super.onStop(); started = false; apply() }
 }
 
-private fun utc(ms: Long?) = if (ms == null) "時刻不明" else SimpleDateFormat("yyyy-MM-dd HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date(ms))
+internal fun utc(ms: Long?) = if (ms == null) "時刻不明" else SimpleDateFormat("yyyy-MM-dd HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date(ms))
 
-private fun status(s: UiState) = when (s.conn) {
+internal fun status(s: UiState) = when (s.conn) {
     Conn.UNREGISTERED -> "未登録"
     Conn.SCANNING -> "scan 中"
     Conn.CONNECTING -> "接続中"
@@ -69,20 +74,39 @@ private fun status(s: UiState) = when (s.conn) {
 @Composable
 private fun App(s: UiState, granted: Boolean, ctl: Controller, apply: () -> Unit, save: (Settings) -> Unit, setGranted: (Boolean) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
+    var dev by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { Live.load() }
     Scaffold(
         topBar = { if (s.settings.demo) Surface(color = Color(0xFFB00020)) { Text("DEMO", Modifier.fillMaxWidth().padding(8.dp), color = Color.White, style = MaterialTheme.typography.titleMedium) } },
         bottomBar = {
             NavigationBar {
-                listOf("同期", "一覧", "設定").forEachIndexed { i, t -> NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = {}, label = { Text(t) }) }
+                listOf("ホーム", "要約", "ログ", "診療", "設定").forEachIndexed { i, t -> NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = {}, label = { Text(t, maxLines = 1) }) }
             }
         },
     ) { pad ->
         Box(Modifier.padding(pad).padding(12.dp)) {
             when (tab) {
-                0 -> SyncTab(s, granted, ctl, setGranted)
-                1 -> ListTab(s)
-                else -> SettingsTab(s, ctl, save)
+                0 -> HomeTab(s)
+                1 -> SummaryTab()
+                2 -> LogsTab()
+                3 -> ClinicTab()
+                else -> if (dev) Column { TextButton(onClick = { dev = false }) { Text("← 設定に戻る") }; DevTabs(s, granted, ctl, save, setGranted) } else PrivacyTab { dev = true }
             }
+        }
+    }
+}
+
+/** 開発用の既存画面（BLE 同期・受信ログ・設定）。 */
+@Composable
+private fun DevTabs(s: UiState, granted: Boolean, ctl: Controller, save: (Settings) -> Unit, setGranted: (Boolean) -> Unit) {
+    var sub by remember { mutableIntStateOf(0) }
+    Column {
+        PrimaryTabRow(selectedTabIndex = sub) { listOf("同期", "一覧", "設定").forEachIndexed { i, t -> Tab(selected = sub == i, onClick = { sub = i }, text = { Text(t) }) } }
+        Spacer(Modifier.height(12.dp))
+        when (sub) {
+            0 -> SyncTab(s, granted, ctl, setGranted)
+            1 -> ListTab(s)
+            else -> SettingsTab(s, ctl, save)
         }
     }
 }
