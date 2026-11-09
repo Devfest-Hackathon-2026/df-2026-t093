@@ -1,8 +1,10 @@
 package dev.lifeos.pendant.android
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -15,6 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.lifeos.pendant.UiState
@@ -172,6 +177,7 @@ fun SummaryTab() {
     val msgs = remember { mutableStateListOf(false to "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。") }
     val memo = remember { mutableStateListOf<String>() }
     var input by remember { mutableStateOf("") }
+    var report by remember { mutableStateOf(false) }
     val list = rememberLazyListState()
     LaunchedEffect(msgs.size) { list.animateScrollToItem(msgs.size) }
     fun ask(q: String, a: String, m: String) { msgs += true to q; msgs += false to a; if (m !in memo) memo += m }
@@ -199,12 +205,48 @@ fun SummaryTab() {
                 }
             }
         }
+        Button(onClick = { report = true }, Modifier.fillMaxWidth()) { Text("医師向け報告書にまとめる") }
+        if (report) ReportDialog(reportText(memo)) { report = false }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SCRIPTS.forEach { sc -> AssistChip(onClick = { ask(sc.chip, sc.answer, sc.memo) }, label = { Text(sc.chip) }) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(input, { input = it }, Modifier.weight(1f), placeholder = { Text("先生に伝えたいことを相談") })
             Button(enabled = input.isNotBlank(), onClick = { ask(input, "「$input」を診察で伝えるメモに追加しました。（ハリボテ: AIの応答は未接続）", input); input = "" }) { Text("送信") }
+        }
+    }
+}
+
+/** 医師に渡す報告書。チャットではなく、相談で整理したメモと記録の所見だけを1枚にまとめる。 */
+private fun reportText(memo: List<String>) = buildString {
+    appendLine("【医師向け報告書】")
+    appendLine("患者: 山田 太郎さん")
+    appendLine("期間: 11/2〜11/9（作成: 11/9）")
+    appendLine()
+    appendLine("【伝えたいこと】")
+    if (memo.isEmpty()) appendLine("・（相談で整理した内容はまだありません）") else memo.forEach { appendLine("・$it") }
+    appendLine()
+    appendLine("【記録からの所見】")
+    appendLine("・膝の痛みの訴え: 週5日（朝・午後に多い）")
+    appendLine("・物忘れの訴え: 週2回（鍵・曜日）")
+    appendLine("・服薬の確認: 声かけに「飲んだ」と返答 6/7日")
+    appendLine()
+    appendLine("【本日の様子 ${DAYS[0].date}】")
+    appendLine(DAYS[0].summary)
+    appendLine()
+    append("※ ペンダントの会話ログからの自動要約です。診断ではありません。")
+}
+
+@Composable
+private fun ReportDialog(text: String, onClose: () -> Unit) {
+    val ctx = LocalContext.current
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.systemBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { Text(text) }
+                Button(onClick = { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null)) }, Modifier.fillMaxWidth()) { Text("医師に共有する") }
+                OutlinedButton(onClick = onClose, Modifier.fillMaxWidth()) { Text("閉じる") }
+            }
         }
     }
 }

@@ -183,6 +183,7 @@ struct SummaryView: View {
     @State private var msgs = [Msg(mine: false, text: "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。")]
     @State private var memo: [String] = []
     @State private var input = ""
+    @State private var report = false
 
     private func ask(_ q: String, _ a: String, _ m: String) {
         msgs.append(Msg(mine: true, text: q)); msgs.append(Msg(mine: false, text: a))
@@ -222,6 +223,7 @@ struct SummaryView: View {
                 }
                 .onChange(of: msgs.count) { _, _ in withAnimation { proxy.scrollTo(memo.isEmpty ? msgs.last?.id as AnyHashable? : "memo", anchor: .bottom) } }
             }
+            Button("医師向け報告書にまとめる") { report = true }.buttonStyle(.borderedProminent).tint(pendantTeal).frame(maxWidth: .infinity)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack { ForEach(scripts, id: \.chip) { sc in Button(sc.chip) { ask(sc.chip, sc.answer, sc.memo) }.buttonStyle(.bordered) } }
             }
@@ -230,6 +232,29 @@ struct SummaryView: View {
                 Button("送信") { ask(input, "「\(input)」を診察で伝えるメモに追加しました。（ハリボテ: AIの応答は未接続）", input); input = "" }
                     .buttonStyle(.borderedProminent).disabled(input.trimmingCharacters(in: .whitespaces).isEmpty)
             }
+        }.padding()
+        .sheet(isPresented: $report) { ReportView(text: reportText(memo)) }
+    }
+}
+
+/// 医師に渡す報告書。チャットではなく、相談で整理したメモと記録の所見だけを1枚にまとめる。
+private func reportText(_ memo: [String]) -> String {
+    var s = "【医師向け報告書】\n患者: 山田 太郎さん\n期間: 11/2〜11/9（作成: 11/9）\n\n【伝えたいこと】\n"
+    s += memo.isEmpty ? "・（相談で整理した内容はまだありません）\n" : memo.map { "・\($0)\n" }.joined()
+    s += "\n【記録からの所見】\n・膝の痛みの訴え: 週5日（朝・午後に多い）\n・物忘れの訴え: 週2回（鍵・曜日）\n・服薬の確認: 声かけに「飲んだ」と返答 6/7日\n"
+    s += "\n【本日の様子 \(days[0].date)】\n\(days[0].summary)\n\n※ ペンダントの会話ログからの自動要約です。診断ではありません。"
+    return s
+}
+
+private struct ReportView: View {
+    let text: String
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(spacing: 12) {
+            ScrollView { Text(text).frame(maxWidth: .infinity, alignment: .leading) }
+            ShareLink(item: text) { Label("医師に共有する", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity) }
+                .buttonStyle(.borderedProminent).tint(pendantTeal)
+            Button("閉じる") { dismiss() }.buttonStyle(.bordered).frame(maxWidth: .infinity)
         }.padding()
     }
 }
