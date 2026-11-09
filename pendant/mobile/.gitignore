@@ -1,0 +1,7 @@
+.gradle/
+build/
+local.properties
+.kotlin/
+*.xcuserstate
+xcuserdata/
+interop/.build/

@@ -1,0 +1,14 @@
+(version 1)
+# Provisional 2-layer evaluation rules, reused from the Standard prototype.
+# Verify the selected manufacturer's current capabilities before fabrication.
+(rule "SMD pad to pad 0.15"
+  (constraint clearance (min 0.15mm))
+  (condition "A.Type == 'Pad' && B.Type == 'Pad'"))
+
+(rule "PTH hole to track 0.28"
+  (constraint hole_clearance (min 0.28mm))
+  (condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'"))
+
+(rule "PTH pad hole to hole 0.45"
+  (constraint hole_to_hole (min 0.45mm))
+  (condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole' && B.Type == 'Pad' && B.Pad_Type == 'Through-hole'"))

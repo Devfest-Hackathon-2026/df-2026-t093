@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="493.56196pt" height="569.99952pt" viewBox="0 0 493.56196 569.99952" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-27T18:21:28.439653</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.9.4, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 569.99952
+L 493.56196 569.99952
+L 493.56196 0
+L 0 0
+z
+" style="fill: #f5f7fb"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 246.78098 495.939712
+C 299.975265 495.939712 350.998011 474.805398 388.612051 437.191358
+C 426.226091 399.577318 447.360405 348.554572 447.360405 295.360287
+C 447.360405 242.166001 426.226091 191.143255 388.612051 153.529215
+C 350.998011 115.915175 299.975265 94.780862 246.78098 94.780862
+C 193.586695 94.780862 142.563948 115.915175 104.949908 153.529215
+C 67.335868 191.143255 46.201555 242.166001 46.201555 295.360287
+C 46.201555 348.554572 67.335868 399.577318 104.949908 437.191358
+C 142.563948 474.805398 193.586695 495.939712 246.78098 495.939712
+L 246.78098 495.939712
+z
+" clip-path="url(#p4ab9e31695)" style="fill: none; stroke-dasharray: 11,6.6; stroke-dashoffset: 0; stroke: #d3a43f; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 246.78098 473.653109
+C 294.064789 473.653109 339.418341 454.867052 372.853043 421.43235
+C 406.287745 387.997648 425.073802 342.644096 425.073802 295.360287
+C 425.073802 248.076478 406.287745 202.722925 372.853043 169.288223
+C 339.418341 135.853521 294.064789 117.067465 246.78098 117.067465
+C 199.497171 117.067465 154.143618 135.853521 120.708916 169.288223
+C 87.274214 202.722925 68.488158 248.076478 68.488158 295.360287
+C 68.488158 342.644096 87.274214 387.997648 120.708916 421.43235
+C 154.143618 454.867052 199.497171 473.653109 246.78098 473.653109
+z
+" clip-path="url(#p4ab9e31695)" style="fill: #e5edf7; stroke: #456684; stroke-width: 2.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 126.99049 412.187423
+L 366.57147 412.187423
+L 366.57147 311.897711
+L 126.99049 311.897711
+z
+" clip-path="url(#p4ab9e31695)" style="fill: #5e9b84; stroke: #316e5b; stroke-width: 1.4; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 246.78098 306.32606
+C 270.422884 306.32606 293.099661 296.933032 309.817012 280.215681
+C 326.534363 263.49833 335.927391 240.821554 335.927391 217.179649
+C 335.927391 193.537744 326.534363 170.860968 309.817012 154.143617
+C 293.099661 137.426266 270.422884 128.033238 246.78098 128.033238
+C 223.139075 128.033238 200.462299 137.426266 183.744948 154.143617
+C 167.027597 170.860968 157.634569 193.537744 157.634569 217.179649
+C 157.634569 240.821554 167.027597 263.49833 183.744948 280.215681
+C 200.462299 296.933032 223.139075 306.32606 246.78098 306.32606
+z
+" clip-path="url(#p4ab9e31695)" style="fill: #e4bb68; stroke: #9f7633; stroke-width: 1.4; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="fill: #123c2b; font: 700 11px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif" transform="translate(200.715902 358.876114)">Vina 30 F body</text>
+    <text style="fill: #123c2b; font: 700 11px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif" transform="translate(207.569417 371.279645)">21.5 × 9 mm</text>
+   </g>
+   <g id="text_2">
+    <text style="fill: #69470d; font: 700 11px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif" transform="translate(206.050042 214.013196)">CR1632 body</text>
+    <text style="fill: #69470d; font: 700 11px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif" transform="translate(221.074495 226.416727)">Ø16 mm</text>
+   </g>
+   <g id="patch_6">
+    <path d="M 377.93284 259.784957
+Q 313.299484 282.721195 249.719785 305.283525
+" style="fill: none; stroke: #30475b; stroke-linecap: round"/>
+    <path d="M 253.714475 305.77592
+L 249.719785 305.283525
+L 252.510514 302.38321
+" style="fill: none; stroke: #30475b; stroke-linecap: round"/>
+   </g>
+   <g id="text_3">
+    <text style="fill: #30475b; font: 9px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="370.471625" y="255.244402" transform="rotate(-0 370.471625 255.244402)">0.5 mm gap</text>
+   </g>
+   <g id="text_4">
+    <text style="fill: #806013; font: 10px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle" x="246.78098" y="75.986222" transform="rotate(-0 246.78098 75.986222)">Dashed: Ø36 solar panel (different layer)</text>
+   </g>
+   <g id="text_5">
+    <text style="fill: #34516c; font: 10px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle" x="246.78098" y="513.56712" transform="rotate(-0 246.78098 513.56712)">PCB outline Ø32 mm</text>
+   </g>
+   <g id="text_6">
+    <text style="fill: #9a3c35; font: 700 9px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle" x="246.78098" y="540.66553" transform="rotate(-0 246.78098 540.66553)">Bodies only — no holder, terminals, other parts, RF or enclosure.</text>
+   </g>
+   <g id="text_7">
+    <text style="fill: #1d3040; font: 700 17px 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle" x="246.78098" y="20.207656" transform="rotate(-0 246.78098 20.207656)">Ø32 mm PCB: preliminary size study</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p4ab9e31695">
+   <rect x="7.2" y="50.207656" width="479.16196" height="512.591864"/>
+  </clipPath>
+ </defs>
+</svg>

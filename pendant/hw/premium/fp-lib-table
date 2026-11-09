@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "pendant")(type "KiCad")(uri "${KIPRJMOD}/../standard/pendant.pretty")(options "")(descr "Shared BC15M, microphone and SWD footprints"))
+  (lib (name "premium")(type "KiCad")(uri "${KIPRJMOD}/premium.pretty")(options "")(descr "Evaluation footprints; manufacturing validation required"))
+)

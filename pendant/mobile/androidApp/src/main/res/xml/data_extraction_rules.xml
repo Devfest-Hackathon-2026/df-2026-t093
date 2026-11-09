@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The storage roots (filesDir/pendant, filesDir/pendant-demo) hold the recordings: never in a backup or a device transfer. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="pendant" />
+        <exclude domain="file" path="pendant-demo" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="pendant" />
+        <exclude domain="file" path="pendant-demo" />
+    </device-transfer>
+</data-extraction-rules>

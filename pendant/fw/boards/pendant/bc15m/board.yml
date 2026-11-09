@@ -1,0 +1,6 @@
+board:
+  name: bc15m
+  full_name: Fanstel BC15M
+  vendor: pendant
+  socs:
+    - name: nrf54l15

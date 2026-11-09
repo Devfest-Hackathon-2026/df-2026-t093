@@ -1,0 +1,8 @@
+/* MCUboot image: share the app partition table and put code in the boot partition. */
+#include "../boards/pendant_partitions.dtsi"
+
+/ {
+	chosen {
+		zephyr,code-partition = &boot_partition;
+	};
+};
