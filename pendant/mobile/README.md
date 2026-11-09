@@ -1,4 +1,4 @@
-# mobile/ — LifeOS Pendant の Android / iOS アプリ（開発 FW 用）
+# mobile/ — anam の Android / iOS アプリ
 
 開発 FW（`fw/src/ble.c` + `fw/lib/sync`、`docs/spec/formats.md` §6・§9〜§11）と同期するアプリです。KMP の共有 core（`shared/`）と、OS ごとのネイティブ UI（`androidApp/` Compose、`iosApp/` SwiftUI）でできています。Refs #32。
 
