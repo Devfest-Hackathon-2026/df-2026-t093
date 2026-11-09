@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 
+from app import ai
 from app.db import get_session
 from app.models import Day, DayRead, DayUpsert, Line, LineCreate, now
 
@@ -58,6 +59,21 @@ def add_lines(date: dt.date, payload: list[LineCreate], session: SessionDep):
     day = session.get(Day, date) or Day(date=date)
     for line in payload:
         day.lines.append(Line.model_validate(line, update={"day_date": date}))
+    day.updated_at = now()
+    session.add(day)
+    session.commit()
+    session.refresh(day)
+    return day
+
+
+@router.post("/{date}/summarize", response_model=DayRead)
+def summarize_day(date: dt.date, session: SessionDep):
+    """その日の文字起こしから Gemini で要約を作って保存する (クラウド送信オンのときだけ)。"""
+    ai.require_cloud(session)
+    day = _get_or_404(session, date)
+    if not day.lines:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "文字起こしがありません")
+    day.summary = ai.summarize_day(day)
     day.updated_at = now()
     session.add(day)
     session.commit()

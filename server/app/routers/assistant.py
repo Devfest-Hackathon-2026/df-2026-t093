@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, delete, select
 
-from app import assistant
+from app import ai, assistant
 from app.db import get_session
 from app.models import (
     AskRequest,
@@ -49,12 +49,17 @@ def list_messages(session: SessionDep):
 
 @router.post("/assistant/messages", response_model=AskResponse, status_code=status.HTTP_201_CREATED)
 def ask(payload: AskRequest, session: SessionDep):
-    answer_text, memo_text = assistant.reply(payload.text)
+    """クラウド送信がオンで Gemini が設定済みなら Gemini、そうでなければアプリと同じ台本で返す。"""
+    if ai.cloud_ready(session):
+        answer_text, memo_text = ai.assistant_reply(session, payload.text)
+    else:
+        answer_text, memo_text = assistant.reply(payload.text)
     q = AssistantMessage(mine=True, text=payload.text)
     a = AssistantMessage(mine=False, text=answer_text)
     session.add(q)
     session.add(a)
-    _add_memo(session, memo_text)
+    if memo_text:
+        _add_memo(session, memo_text)
     session.commit()
     session.refresh(q)
     session.refresh(a)

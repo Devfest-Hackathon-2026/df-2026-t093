@@ -121,3 +121,59 @@ def test_assistant(client):
     assert client.delete("/assistant/messages").status_code == 204
     assert len(client.get("/assistant/messages").json()) == 1
     assert client.post("/assistant/messages", json={"text": ""}).status_code == 422
+
+
+@pytest.fixture
+def fake_gemini(monkeypatch):
+    """Gemini を呼ばずに、渡されたプロンプトを記録して固定の値を返す。"""
+    from app import ai, llm
+
+    calls = []
+
+    def fake(prompt, schema):
+        calls.append(prompt)
+        return {
+            ai.DaySummaryOut: lambda: ai.DaySummaryOut(summary="膝の痛みを訴えた。"),
+            ai.ConcernsOut: lambda: ai.ConcernsOut(concerns=["膝の痛み: 2回"]),
+            ai.AssistantOut: lambda: ai.AssistantOut(answer="膝の痛みを伝えましょう。", memo="膝の痛み: 2回"),
+        }[schema]()
+
+    monkeypatch.setattr(llm, "enabled", lambda: True)
+    monkeypatch.setattr(llm, "generate_json", fake)
+    return calls
+
+
+def test_gemini_requires_cloud_consent(client, fake_gemini):
+    client.post("/days/2026-11-09/lines", json=[{"time": "07:42", "who": "ご本人", "text": "膝が痛い"}])
+    # クラウド送信オフ: 生成系は 409、アシスタントは台本で返して Gemini は呼ばない
+    assert client.post("/days/2026-11-09/summarize").status_code == 409
+    client.post("/assistant/messages", json={"text": "服薬は大丈夫？"})
+    assert fake_gemini == []
+
+
+def test_gemini_flows(client, fake_gemini):
+    client.patch("/settings", json={"cloud_enabled": True})
+    client.post("/days/2026-11-09/lines", json=[{"time": "07:42", "who": "ご本人", "text": "膝が痛い"}])
+
+    r = client.post("/days/2026-11-09/summarize")
+    assert r.json()["summary"] == "膝の痛みを訴えた。"
+    assert "07:42 ご本人: 膝が痛い" in fake_gemini[-1]
+
+    r = client.post("/clinic-summaries/generate", json={
+        "patient_name": "山田 太郎", "period_start": "2026-11-02", "period_end": "2026-11-09"})
+    assert r.status_code == 201 and r.json()["concerns"] == ["膝の痛み: 2回"]
+    empty = {"patient_name": "x", "period_start": "2020-01-01", "period_end": "2020-01-02"}
+    assert client.post("/clinic-summaries/generate", json=empty).status_code == 404
+
+    body = client.post("/assistant/messages", json={"text": "何を伝える？"}).json()
+    assert body["answer"]["text"] == "膝の痛みを伝えましょう。"
+    assert [m["text"] for m in body["memos"]] == ["膝の痛み: 2回"]
+
+
+def test_api_token(client, monkeypatch):
+    import app.main as main
+
+    monkeypatch.setattr(main, "API_TOKEN", "secret")
+    assert client.get("/health").status_code == 200
+    assert client.get("/status").status_code == 401
+    assert client.get("/status", headers={"Authorization": "Bearer secret"}).status_code == 200
