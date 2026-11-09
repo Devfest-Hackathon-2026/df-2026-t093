@@ -1,0 +1,6 @@
+fw/build*/
+hw/**/*-backups/
+hw/**/*.kicad_prl
+hw/**/fp-info-cache
+hw/**/*.lck
+fw/lib/.build/
