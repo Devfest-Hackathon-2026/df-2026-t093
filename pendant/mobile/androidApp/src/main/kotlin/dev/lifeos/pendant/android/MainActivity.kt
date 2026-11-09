@@ -75,6 +75,7 @@ internal fun status(s: UiState) = when (s.conn) {
 private fun App(s: UiState, granted: Boolean, ctl: Controller, apply: () -> Unit, save: (Settings) -> Unit, setGranted: (Boolean) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     var dev by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { Live.load() }
     Scaffold(
         topBar = { if (s.settings.demo) Surface(color = Color(0xFFB00020)) { Text("DEMO", Modifier.fillMaxWidth().padding(8.dp), color = Color.White, style = MaterialTheme.typography.titleMedium) } },
         bottomBar = {

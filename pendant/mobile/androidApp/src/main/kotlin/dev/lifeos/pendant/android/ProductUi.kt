@@ -22,10 +22,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import dev.lifeos.pendant.UiState
 
-// ハリボテ: 見た目と画面遷移を決めるための固定データ。録音の有無・接続状態・最終同期だけ実データ（UiState）。
-// ponytail: 保存・文字起こし・要約・共有は未接続。実装するときはここの固定データを差し替える。
+// 画面。データは Live（Api.kt）から読む。サーバー未設定・未接続のときは下の固定データ（ハリボテ）を表示する。
+// 録音の有無・接続状態・最終同期は BLE の実データ（UiState）。
 
 val PendantScheme = lightColorScheme(
     primary = Color(0xFF00796B), secondary = Color(0xFF455A64), tertiary = Color(0xFFB00020),
@@ -33,10 +34,10 @@ val PendantScheme = lightColorScheme(
     surfaceContainer = Color(0xFFE3F2EF), surfaceContainerHighest = Color(0xFFE0EEEB),
 )
 
-private class Line(val time: String, val who: String, val text: String)
-private class Day(val date: String, val summary: String, val audio: String, val lines: List<Line>)
+class Line(val time: String, val who: String, val text: String)
+class Day(val date: String, val summary: String, val audio: String, val lines: List<Line>)
 
-private val DAYS = listOf(
+val DAYS = listOf(
     Day("11/9（月）", "朝食は完食。午後は膝の痛みを2回訴えた。夜は穏やかに家族と通話。",
         "ADPCM 32 kbps ・ 5時間12分 ・ 約 72 MB", listOf(
             Line("07:42", "ご本人", "今日は、ちょっと膝が痛いねえ。"),
@@ -51,12 +52,15 @@ private val DAYS = listOf(
             Line("17:20", "ご本人", "鍵をどこに置いたか、忘れてしまった。"))),
 )
 
+val CONCERNS = listOf("膝の痛みの訴え: 週5日（朝・午後に多い）", "物忘れの訴え: 週2回（鍵・曜日）", "服薬の確認: 声かけに「飲んだ」と返答 6/7日")
+
 private val TIERS = listOf("文字起こし", "要約", "生データ")
 
 @Composable
 fun HomeTab(s: UiState) {
     val rec = s.info?.recording ?: true
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Live.error?.let { e -> item { Text(e, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary) } }
         item {
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -74,7 +78,7 @@ fun HomeTab(s: UiState) {
         item { Info("端末に保存済み", "3日分のうち 1.2日", "古い順に自動で整理します") }
         item {
             Text("今日のハイライト", style = MaterialTheme.typography.titleMedium)
-            DAYS[0].summary.split("。").filter { it.isNotBlank() }.forEach { Text("・$it") }
+            Live.days[0].summary.split("。").filter { it.isNotBlank() }.forEach { Text("・$it") }
         }
     }
 }
@@ -96,7 +100,7 @@ fun LogsTab() {
             TIERS.forEachIndexed { i, t -> FilterChip(selected = tier == i, onClick = { tier = i }, label = { Text(t) }) }
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(DAYS) { d ->
+            items(Live.days) { d ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(d.date, style = MaterialTheme.typography.titleMedium)
@@ -113,26 +117,42 @@ fun LogsTab() {
 }
 
 @Composable
-fun ClinicTab() = LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    item { Text("次回診療向けサマリー", style = MaterialTheme.typography.headlineSmall) }
-    item { Text("対象期間: 11/2〜11/9（山田 太郎さん）", style = MaterialTheme.typography.bodySmall) }
-    item {
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("気になる点", style = MaterialTheme.typography.titleMedium)
-                Text("・膝の痛みの訴え: 週5日（朝・午後に多い）")
-                Text("・物忘れの訴え: 週2回（鍵・曜日）")
-                Text("・服薬の確認: 声かけに「飲んだ」と返答 6/7日")
+fun ClinicTab() {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var err by remember { mutableStateOf<String?>(null) }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("次回診療向けサマリー", style = MaterialTheme.typography.headlineSmall) }
+        item { Text("対象期間: ${Live.period}（山田 太郎さん）", style = MaterialTheme.typography.bodySmall) }
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("気になる点", style = MaterialTheme.typography.titleMedium)
+                    Live.concerns.forEach { Text("・$it") }
+                }
             }
         }
+        item { Text("※ 会話ログからの自動要約です。診断ではありません。", style = MaterialTheme.typography.bodySmall) }
+        if (Api.enabled) item {
+            Button(enabled = !busy && Live.cloud, onClick = {
+                scope.launch { busy = true; err = runCatching { Live.generateClinic() }.exceptionOrNull()?.message; busy = false }
+            }) { Text(if (busy) "Gemini で作成中…" else "記録から作り直す（Gemini）") }
+            if (!Live.cloud) Text("設定でクラウド送信をオンにすると使えます", style = MaterialTheme.typography.bodySmall)
+            err?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.bodySmall) }
+        }
     }
-    item { Text("※ 会話ログからの自動要約です。診断ではありません。", style = MaterialTheme.typography.bodySmall) }
-    item { Button(onClick = {}) { Text("医師に共有する") } }
 }
 
 @Composable
 fun PrivacyTab(onDev: () -> Unit) {
-    var cloud by remember { mutableStateOf(false) }
+    val cloud = Live.cloud
+    val scope = rememberCoroutineScope()
+    var err by remember { mutableStateOf<String?>(null) }
+    // サーバーにつながっていればその設定を切り替える（Gemini に送るかどうかはサーバー側でも判定する）
+    fun set(on: Boolean) {
+        if (!Api.enabled) { Live.cloud = on; return }
+        scope.launch { err = runCatching { Live.setCloud(on) }.exceptionOrNull()?.message }
+    }
     var confirm by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("プライバシー", style = MaterialTheme.typography.headlineSmall)
@@ -140,9 +160,10 @@ fun PrivacyTab(onDev: () -> Unit) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("クラウドに送信する", style = MaterialTheme.typography.titleMedium); Text(if (cloud) "オン: 文字起こしテキストを Gemini API に送ります" else "オフ: すべてこの端末の中で処理します（初期値）", style = MaterialTheme.typography.bodySmall) }
-                    Switch(cloud, { if (it) confirm = true else cloud = false })
+                    Switch(cloud, { if (it) confirm = true else set(false) })
                 }
                 if (cloud) Text("外部サーバーに会話の内容が渡ります。ご本人・ご家族の同意を確認してください。", color = MaterialTheme.colorScheme.tertiary)
+                err?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary) }
             }
         }
         Card(Modifier.fillMaxWidth()) {
@@ -157,13 +178,13 @@ fun PrivacyTab(onDev: () -> Unit) {
         onDismissRequest = { confirm = false },
         title = { Text("クラウド送信をオンにしますか？") },
         text = { Text("会話の文字起こしが外部のサーバーに送信されます。第三者の声が含まれる場合があります。") },
-        confirmButton = { TextButton(onClick = { cloud = true; confirm = false }) { Text("理解してオンにする") } },
+        confirmButton = { TextButton(onClick = { set(true); confirm = false }) { Text("理解してオンにする") } },
         dismissButton = { TextButton(onClick = { confirm = false }) { Text("やめる") } },
     )
 }
 
-// 「先生に伝えたいこと」をAIと相談するアシスタント。返答は固定の台本（ハリボテ）。
-// ponytail: 実際の応答は未接続。つなぐときは ask() の返答を Gemini 等の呼び出しに差し替える。
+// 「先生に伝えたいこと」をAIと相談するアシスタント。サーバーにつながっていればサーバーが返す
+// （クラウドがオンなら Gemini、オフなら同じ台本）。未設定・失敗時はアプリ内の台本で返す。
 private class Script(val chip: String, val answer: String, val memo: String)
 
 private val SCRIPTS = listOf(
@@ -175,17 +196,28 @@ private val SCRIPTS = listOf(
 @Composable
 fun SummaryTab() {
     val msgs = remember { mutableStateListOf(false to "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。") }
-    val memo = remember { mutableStateListOf<String>() }
+    val memo = Live.memo
     var input by remember { mutableStateOf("") }
     var report by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val list = rememberLazyListState()
-    LaunchedEffect(msgs.size) { list.animateScrollToItem(msgs.size) }
-    fun ask(q: String, a: String, m: String) { msgs += true to q; msgs += false to a; if (m !in memo) memo += m }
+    LaunchedEffect(msgs.size, busy) { list.animateScrollToItem(msgs.size) }
+    fun local(q: String, a: String, m: String) { msgs += false to a; if (m !in memo) memo += m }
+    fun ask(q: String, a: String, m: String) {
+        msgs += true to q
+        if (!Api.enabled) return local(q, a, m)
+        scope.launch {
+            busy = true
+            runCatching { Live.ask(q) }.onSuccess { msgs += false to it }.onFailure { local(q, a + "（サーバーに接続できないため台本で返答）", m) }
+            busy = false
+        }
+    }
     Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp)) {
-                Text("本日の要約  ${DAYS[0].date}", style = MaterialTheme.typography.titleMedium)
-                Text(DAYS[0].summary)
+                Text("本日の要約  ${Live.days[0].date}", style = MaterialTheme.typography.titleMedium)
+                Text(Live.days[0].summary)
             }
         }
         LazyColumn(Modifier.weight(1f), state = list, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -196,6 +228,7 @@ fun SummaryTab() {
                     }
                 }
             }
+            if (busy) item { Text("考え中…", Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodySmall) }
             if (memo.isNotEmpty()) item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
@@ -208,11 +241,11 @@ fun SummaryTab() {
         Button(onClick = { report = true }, Modifier.fillMaxWidth()) { Text("医師向け報告書にまとめる") }
         if (report) ReportDialog(reportText(memo)) { report = false }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SCRIPTS.forEach { sc -> AssistChip(onClick = { ask(sc.chip, sc.answer, sc.memo) }, label = { Text(sc.chip) }) }
+            SCRIPTS.forEach { sc -> AssistChip(enabled = !busy, onClick = { ask(sc.chip, sc.answer, sc.memo) }, label = { Text(sc.chip) }) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(input, { input = it }, Modifier.weight(1f), placeholder = { Text("先生に伝えたいことを相談") })
-            Button(enabled = input.isNotBlank(), onClick = { ask(input, "「$input」を診察で伝えるメモに追加しました。（ハリボテ: AIの応答は未接続）", input); input = "" }) { Text("送信") }
+            Button(enabled = input.isNotBlank() && !busy, onClick = { ask(input, "「$input」を診察で伝えるメモに追加しました。", input); input = "" }) { Text("送信") }
         }
     }
 }
@@ -221,18 +254,16 @@ fun SummaryTab() {
 private fun reportText(memo: List<String>) = buildString {
     appendLine("【医師向け報告書】")
     appendLine("患者: 山田 太郎さん")
-    appendLine("期間: 11/2〜11/9（作成: 11/9）")
+    appendLine("期間: ${Live.period}")
     appendLine()
     appendLine("【伝えたいこと】")
     if (memo.isEmpty()) appendLine("・（相談で整理した内容はまだありません）") else memo.forEach { appendLine("・$it") }
     appendLine()
     appendLine("【記録からの所見】")
-    appendLine("・膝の痛みの訴え: 週5日（朝・午後に多い）")
-    appendLine("・物忘れの訴え: 週2回（鍵・曜日）")
-    appendLine("・服薬の確認: 声かけに「飲んだ」と返答 6/7日")
+    Live.concerns.forEach { appendLine("・$it") }
     appendLine()
-    appendLine("【本日の様子 ${DAYS[0].date}】")
-    appendLine(DAYS[0].summary)
+    appendLine("【本日の様子 ${Live.days[0].date}】")
+    appendLine(Live.days[0].summary)
     appendLine()
     append("※ ペンダントの会話ログからの自動要約です。診断ではありません。")
 }

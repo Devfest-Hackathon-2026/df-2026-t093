@@ -1,20 +1,19 @@
 import SwiftUI
 import Shared
 
-// ハリボテ: 見た目と画面遷移を決めるための固定データ（Android の ProductUi.kt と同じ内容）。
-// 録音の有無・接続状態・最終同期だけ実データ（UiState）。
-// ponytail: 保存・文字起こし・要約・共有は未接続。実装するときはここの固定データを差し替える。
+// 画面。データは Live（Api.swift）から読む。サーバー未設定・未接続のときは下の固定データ（ハリボテ）を表示する。
+// 録音の有無・接続状態・最終同期は BLE の実データ（UiState）。Android の ProductUi.kt と同じ内容。
 
 let pendantTeal = Color(red: 0, green: 0.475, blue: 0.42)
 
-private struct Line { let time, who, text: String }
-private struct Day: Identifiable {
+struct Line { let time, who, text: String }
+struct Day: Identifiable {
     let date, summary, audio: String
     let lines: [Line]
     var id: String { date }
 }
 
-private let days = [
+let defaultDays = [
     Day(date: "11/9（月）", summary: "朝食は完食。午後は膝の痛みを2回訴えた。夜は穏やかに家族と通話。",
         audio: "ADPCM 32 kbps ・ 5時間12分 ・ 約 72 MB", lines: [
             Line(time: "07:42", who: "ご本人", text: "今日は、ちょっと膝が痛いねえ。"),
@@ -28,6 +27,8 @@ private let days = [
             Line(time: "10:06", who: "家族", text: "日曜日だよ。散歩に行こうか。"),
             Line(time: "17:20", who: "ご本人", text: "鍵をどこに置いたか、忘れてしまった。")]),
 ]
+
+let defaultConcerns = ["膝の痛みの訴え: 週5日（朝・午後に多い）", "物忘れの訴え: 週2回（鍵・曜日）", "服薬の確認: 声かけに「飲んだ」と返答 6/7日"]
 
 private struct InfoCard: View {
     let title, main, sub: String
@@ -44,11 +45,13 @@ private struct InfoCard: View {
 
 struct HomeView: View {
     @EnvironmentObject var model: AppModel
+    @ObservedObject private var live = Live.shared
     var body: some View {
         let s = model.state
         let rec = s.info?.recording ?? true
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                if let e = live.error { Text(e).font(.caption).foregroundColor(.red) }
                 HStack(spacing: 16) {
                     // 本体のラッチインジケーター（録音中は赤、停止は黒）と同じ見た目
                     Circle().fill(rec ? Color(red: 0.84, green: 0, blue: 0) : .black).frame(width: 56, height: 56)
@@ -63,13 +66,14 @@ struct HomeView: View {
                 InfoCard(title: "電源", main: "ソーラー発電中", sub: "蓄電 82 % ・ 非常用電池 満")
                 InfoCard(title: "端末に保存済み", main: "3日分のうち 1.2日", sub: "古い順に自動で整理します")
                 Text("今日のハイライト").font(.headline)
-                ForEach(days[0].summary.split(separator: "。").map(String.init), id: \.self) { Text("・\($0)") }
+                ForEach(live.days[0].summary.split(separator: "。").map(String.init), id: \.self) { Text("・\($0)") }
             }.padding()
         }
     }
 }
 
 struct LogsView: View {
+    @ObservedObject private var live = Live.shared
     @State private var tier = 0
     var body: some View {
         VStack(spacing: 8) {
@@ -77,7 +81,7 @@ struct LogsView: View {
                 .pickerStyle(.segmented).padding(.horizontal)
             ScrollView {
                 VStack(spacing: 8) {
-                    ForEach(days) { d in
+                    ForEach(live.days) { d in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(d.date).font(.headline)
                             switch tier {
@@ -96,42 +100,58 @@ struct LogsView: View {
 }
 
 struct ClinicView: View {
+    @ObservedObject private var live = Live.shared
+    @State private var busy = false
+    @State private var err: String?
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("次回診療向けサマリー").font(.title2)
-                Text("対象期間: 11/2〜11/9（山田 太郎さん）").font(.caption)
+                Text("対象期間: \(live.period)（山田 太郎さん）").font(.caption)
                 VStack(alignment: .leading, spacing: 6) {
                     Text("気になる点").font(.headline)
-                    Text("・膝の痛みの訴え: 週5日（朝・午後に多い）")
-                    Text("・物忘れの訴え: 週2回（鍵・曜日）")
-                    Text("・服薬の確認: 声かけに「飲んだ」と返答 6/7日")
+                    ForEach(live.concerns, id: \.self) { Text("・\($0)") }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(16)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
                 Text("※ 会話ログからの自動要約です。診断ではありません。").font(.caption)
-                Button("医師に共有する") {}.buttonStyle(.borderedProminent)
+                if Api.enabled {
+                    Button(busy ? "Gemini で作成中…" : "記録から作り直す（Gemini）") {
+                        Task { busy = true; do { try await live.generateClinic(); err = nil } catch { err = error.localizedDescription }; busy = false }
+                    }.buttonStyle(.borderedProminent).tint(pendantTeal).disabled(busy || !live.cloud)
+                    if !live.cloud { Text("設定でクラウド送信をオンにすると使えます").font(.caption) }
+                    if let err { Text(err).font(.caption).foregroundColor(.red) }
+                }
             }.padding()
         }
     }
 }
 
 struct PrivacyView: View {
-    @State private var cloud = false
+    @ObservedObject private var live = Live.shared
+    @State private var err: String?
     @State private var confirm = false
     @State private var dev = false
+    // サーバーにつながっていればその設定を切り替える（Gemini に送るかどうかはサーバー側でも判定する）
+    private func set(_ on: Bool) {
+        guard Api.enabled else { live.cloud = on; return }
+        Task { do { try await live.setCloud(on); err = nil } catch { err = error.localizedDescription } }
+    }
+
     var body: some View {
+        let cloud = live.cloud
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("プライバシー").font(.title2)
                 VStack(alignment: .leading, spacing: 8) {
-                    Toggle(isOn: Binding(get: { cloud }, set: { if $0 { confirm = true } else { cloud = false } })) {
+                    Toggle(isOn: Binding(get: { cloud }, set: { if $0 { confirm = true } else { set(false) } })) {
                         VStack(alignment: .leading) {
                             Text("クラウドに送信する").font(.headline)
                             Text(cloud ? "オン: 文字起こしテキストを Gemini API に送ります" : "オフ: すべてこの端末の中で処理します（初期値）").font(.caption)
                         }
                     }
                     if cloud { Text("外部サーバーに会話の内容が渡ります。ご本人・ご家族の同意を確認してください。").foregroundColor(.red) }
+                    if let err { Text(err).font(.caption).foregroundColor(.red) }
                 }
                 .padding(16).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
                 VStack(alignment: .leading) {
@@ -145,7 +165,7 @@ struct PrivacyView: View {
         }
         .sheet(isPresented: $dev) { DevView() }
         .alert("クラウド送信をオンにしますか？", isPresented: $confirm) {
-            Button("理解してオンにする") { cloud = true }
+            Button("理解してオンにする") { set(true) }
             Button("やめる", role: .cancel) {}
         } message: { Text("会話の文字起こしが外部のサーバーに送信されます。第三者の声が含まれる場合があります。") }
     }
@@ -168,8 +188,8 @@ struct DevView: View {
     }
 }
 
-// 「先生に伝えたいこと」をAIと相談するアシスタント。返答は固定の台本（ハリボテ）。
-// ponytail: 実際の応答は未接続。つなぐときは ask() の返答を Gemini 等の呼び出しに差し替える。
+// 「先生に伝えたいこと」をAIと相談するアシスタント。サーバーにつながっていればサーバーが返す
+// （クラウドがオンなら Gemini、オフなら同じ台本）。未設定・失敗時はアプリ内の台本で返す。
 private struct Script { let chip, answer, memo: String }
 private struct Msg: Identifiable { let id = UUID(); let mine: Bool; let text: String }
 
@@ -181,20 +201,31 @@ private let scripts = [
 
 struct SummaryView: View {
     @State private var msgs = [Msg(mine: false, text: "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。")]
-    @State private var memo: [String] = []
+    @ObservedObject private var live = Live.shared
     @State private var input = ""
     @State private var report = false
+    @State private var busy = false
+
+    private func local(_ a: String, _ m: String) {
+        msgs.append(Msg(mine: false, text: a))
+        if !live.memo.contains(m) { live.memo.append(m) }
+    }
 
     private func ask(_ q: String, _ a: String, _ m: String) {
-        msgs.append(Msg(mine: true, text: q)); msgs.append(Msg(mine: false, text: a))
-        if !memo.contains(m) { memo.append(m) }
+        msgs.append(Msg(mine: true, text: q))
+        guard Api.enabled else { return local(a, m) }
+        Task {
+            busy = true
+            do { msgs.append(Msg(mine: false, text: try await live.ask(q))) } catch { local(a + "（サーバーに接続できないため台本で返答）", m) }
+            busy = false
+        }
     }
 
     var body: some View {
         VStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("本日の要約  \(days[0].date)").font(.headline)
-                Text(days[0].summary)
+                Text("本日の要約  \(live.days[0].date)").font(.headline)
+                Text(live.days[0].summary)
             }
             .frame(maxWidth: .infinity, alignment: .leading).padding(12)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
@@ -210,10 +241,11 @@ struct SummaryView: View {
                                 if !m.mine { Spacer(minLength: 40) }
                             }.id(m.id)
                         }
-                        if !memo.isEmpty {
+                        if busy { Text("考え中…").font(.caption).frame(maxWidth: .infinity, alignment: .leading) }
+                        if !live.memo.isEmpty {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("診察で伝えるメモ").font(.headline)
-                                ForEach(memo, id: \.self) { Text("・\($0)") }
+                                ForEach(live.memo, id: \.self) { Text("・\($0)") }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading).padding(12)
                             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
@@ -221,28 +253,28 @@ struct SummaryView: View {
                         }
                     }
                 }
-                .onChange(of: msgs.count) { _, _ in withAnimation { proxy.scrollTo(memo.isEmpty ? msgs.last?.id as AnyHashable? : "memo", anchor: .bottom) } }
+                .onChange(of: msgs.count) { _, _ in withAnimation { proxy.scrollTo(live.memo.isEmpty ? msgs.last?.id as AnyHashable? : "memo", anchor: .bottom) } }
             }
             Button("医師向け報告書にまとめる") { report = true }.buttonStyle(.borderedProminent).tint(pendantTeal).frame(maxWidth: .infinity)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack { ForEach(scripts, id: \.chip) { sc in Button(sc.chip) { ask(sc.chip, sc.answer, sc.memo) }.buttonStyle(.bordered) } }
+                HStack { ForEach(scripts, id: \.chip) { sc in Button(sc.chip) { ask(sc.chip, sc.answer, sc.memo) }.buttonStyle(.bordered).disabled(busy) } }
             }
             HStack {
                 TextField("先生に伝えたいことを相談", text: $input).textFieldStyle(.roundedBorder)
-                Button("送信") { ask(input, "「\(input)」を診察で伝えるメモに追加しました。（ハリボテ: AIの応答は未接続）", input); input = "" }
-                    .buttonStyle(.borderedProminent).disabled(input.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button("送信") { ask(input, "「\(input)」を診察で伝えるメモに追加しました。", input); input = "" }
+                    .buttonStyle(.borderedProminent).disabled(busy || input.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }.padding()
-        .sheet(isPresented: $report) { ReportView(text: reportText(memo)) }
+        .sheet(isPresented: $report) { ReportView(text: reportText(live)) }
     }
 }
 
 /// 医師に渡す報告書。チャットではなく、相談で整理したメモと記録の所見だけを1枚にまとめる。
-private func reportText(_ memo: [String]) -> String {
-    var s = "【医師向け報告書】\n患者: 山田 太郎さん\n期間: 11/2〜11/9（作成: 11/9）\n\n【伝えたいこと】\n"
-    s += memo.isEmpty ? "・（相談で整理した内容はまだありません）\n" : memo.map { "・\($0)\n" }.joined()
-    s += "\n【記録からの所見】\n・膝の痛みの訴え: 週5日（朝・午後に多い）\n・物忘れの訴え: 週2回（鍵・曜日）\n・服薬の確認: 声かけに「飲んだ」と返答 6/7日\n"
-    s += "\n【本日の様子 \(days[0].date)】\n\(days[0].summary)\n\n※ ペンダントの会話ログからの自動要約です。診断ではありません。"
+@MainActor private func reportText(_ live: Live) -> String {
+    var s = "【医師向け報告書】\n患者: 山田 太郎さん\n期間: \(live.period)\n\n【伝えたいこと】\n"
+    s += live.memo.isEmpty ? "・（相談で整理した内容はまだありません）\n" : live.memo.map { "・\($0)\n" }.joined()
+    s += "\n【記録からの所見】\n" + live.concerns.map { "・\($0)\n" }.joined()
+    s += "\n【本日の様子 \(live.days[0].date)】\n\(live.days[0].summary)\n\n※ ペンダントの会話ログからの自動要約です。診断ではありません。"
     return s
 }
 

@@ -1,8 +1,13 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// pendant-api の URL とトークン（Git に入れない local.properties から。無ければ空 = 固定データで動く）
+val local = Properties().apply { rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
 
 android {
     namespace = "dev.lifeos.pendant.android"
@@ -13,8 +18,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "API_BASE", "\"${local.getProperty("pendant.api.base", "")}\"")
+        buildConfigField("String", "API_TOKEN", "\"${local.getProperty("pendant.api.token", "")}\"")
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
 

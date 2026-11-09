@@ -29,6 +29,7 @@ struct ContentView: View {
             main
             if intro { IntroView { withAnimation(.easeOut(duration: 0.3)) { intro = false } }.transition(.opacity) }
         }
+        .task { await Live.shared.load() }
     }
 
     private var main: some View {
