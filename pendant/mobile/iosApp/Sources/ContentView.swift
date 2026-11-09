@@ -28,10 +28,10 @@ struct ContentView: View {
             if model.state.settings.demo { Text("DEMO").frame(maxWidth: .infinity).padding(8).background(Color.red).foregroundColor(.white) }
             TabView {
                 HomeView().tabItem { Label("ホーム", systemImage: "house") }
+                SummaryView().tabItem { Label("要約", systemImage: "sparkles") }
                 LogsView().tabItem { Label("ログ", systemImage: "text.bubble") }
                 ClinicView().tabItem { Label("診療", systemImage: "cross.case") }
-                PrivacyView().tabItem { Label("プライバシー", systemImage: "lock.shield") }
-                DevView().tabItem { Label("開発", systemImage: "wrench.and.screwdriver") }
+                PrivacyView().tabItem { Label("設定", systemImage: "gearshape") }
             }.tint(pendantTeal)
         }
     }

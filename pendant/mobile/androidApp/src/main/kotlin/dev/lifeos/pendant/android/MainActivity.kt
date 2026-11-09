@@ -71,21 +71,22 @@ internal fun status(s: UiState) = when (s.conn) {
 @Composable
 private fun App(s: UiState, granted: Boolean, ctl: Controller, apply: () -> Unit, save: (Settings) -> Unit, setGranted: (Boolean) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
+    var dev by remember { mutableStateOf(false) }
     Scaffold(
         topBar = { if (s.settings.demo) Surface(color = Color(0xFFB00020)) { Text("DEMO", Modifier.fillMaxWidth().padding(8.dp), color = Color.White, style = MaterialTheme.typography.titleMedium) } },
         bottomBar = {
             NavigationBar {
-                listOf("ホーム", "ログ", "診療", "プライバシー", "開発").forEachIndexed { i, t -> NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = {}, label = { Text(t, maxLines = 1) }) }
+                listOf("ホーム", "要約", "ログ", "診療", "設定").forEachIndexed { i, t -> NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = {}, label = { Text(t, maxLines = 1) }) }
             }
         },
     ) { pad ->
         Box(Modifier.padding(pad).padding(12.dp)) {
             when (tab) {
                 0 -> HomeTab(s)
-                1 -> LogsTab()
-                2 -> ClinicTab()
-                3 -> PrivacyTab()
-                else -> DevTabs(s, granted, ctl, save, setGranted)
+                1 -> SummaryTab()
+                2 -> LogsTab()
+                3 -> ClinicTab()
+                else -> if (dev) Column { TextButton(onClick = { dev = false }) { Text("← 設定に戻る") }; DevTabs(s, granted, ctl, save, setGranted) } else PrivacyTab { dev = true }
             }
         }
     }

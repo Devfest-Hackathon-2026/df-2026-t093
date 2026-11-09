@@ -1,8 +1,12 @@
 package dev.lifeos.pendant.android
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -122,7 +126,7 @@ fun ClinicTab() = LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) 
 }
 
 @Composable
-fun PrivacyTab() {
+fun PrivacyTab(onDev: () -> Unit) {
     var cloud by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -142,6 +146,7 @@ fun PrivacyTab() {
                 Text("録音中はペンダント前面が赤になります。電源が切れると黒になり、周りの方にも分かります。", style = MaterialTheme.typography.bodySmall)
             }
         }
+        TextButton(onClick = onDev) { Text("開発者向け画面（BLE 同期・受信ログ）") }
     }
     if (confirm) AlertDialog(
         onDismissRequest = { confirm = false },
@@ -150,4 +155,56 @@ fun PrivacyTab() {
         confirmButton = { TextButton(onClick = { cloud = true; confirm = false }) { Text("理解してオンにする") } },
         dismissButton = { TextButton(onClick = { confirm = false }) { Text("やめる") } },
     )
+}
+
+// 「先生に伝えたいこと」をAIと相談するアシスタント。返答は固定の台本（ハリボテ）。
+// ponytail: 実際の応答は未接続。つなぐときは ask() の返答を Gemini 等の呼び出しに差し替える。
+private class Script(val chip: String, val answer: String, val memo: String)
+
+private val SCRIPTS = listOf(
+    Script("何を伝えるべき？", "膝の痛みが今週5日あります。痛む時間帯（朝・午後）と、湿布で和らいだかを伝えると診察が早く進みます。物忘れ（鍵・曜日）も週2回ありました。", "膝の痛み: 週5日・朝と午後・湿布で対応"),
+    Script("膝の痛みを詳しく", "朝食前後と14時ごろに訴えがあり、「ずきずき」という表現でした。痛みの強さを10段階で本人に聞いておくと、先生に伝えやすくなります。", "痛みの表現: 「ずきずき」（強さは未確認）"),
+    Script("服薬は大丈夫？", "19:31に「飲んだよ」と返答があり、今週は6/7日で確認できました。確認できなかった1日は、先生にそのまま伝えましょう。", "服薬: 6/7日確認（1日不明）"),
+)
+
+@Composable
+fun SummaryTab() {
+    val msgs = remember { mutableStateListOf(false to "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。") }
+    val memo = remember { mutableStateListOf<String>() }
+    var input by remember { mutableStateOf("") }
+    val list = rememberLazyListState()
+    LaunchedEffect(msgs.size) { list.animateScrollToItem(msgs.size) }
+    fun ask(q: String, a: String, m: String) { msgs += true to q; msgs += false to a; if (m !in memo) memo += m }
+    Column(Modifier.fillMaxSize().imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp)) {
+                Text("本日の要約  ${DAYS[0].date}", style = MaterialTheme.typography.titleMedium)
+                Text(DAYS[0].summary)
+            }
+        }
+        LazyColumn(Modifier.weight(1f), state = list, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(msgs) { (mine, text) ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
+                    Surface(shape = RoundedCornerShape(16.dp), color = if (mine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer) {
+                        Text(text, Modifier.padding(10.dp).widthIn(max = 300.dp), color = if (mine) Color.White else Color.Unspecified)
+                    }
+                }
+            }
+            if (memo.isNotEmpty()) item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text("診察で伝えるメモ", style = MaterialTheme.typography.titleMedium)
+                        memo.forEach { Text("・$it") }
+                    }
+                }
+            }
+        }
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SCRIPTS.forEach { sc -> AssistChip(onClick = { ask(sc.chip, sc.answer, sc.memo) }, label = { Text(sc.chip) }) }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(input, { input = it }, Modifier.weight(1f), placeholder = { Text("先生に伝えたいことを相談") })
+            Button(enabled = input.isNotBlank(), onClick = { ask(input, "「$input」を診察で伝えるメモに追加しました。（ハリボテ: AIの応答は未接続）", input); input = "" }) { Text("送信") }
+        }
+    }
 }

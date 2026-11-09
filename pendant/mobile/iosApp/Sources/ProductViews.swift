@@ -119,6 +119,7 @@ struct ClinicView: View {
 struct PrivacyView: View {
     @State private var cloud = false
     @State private var confirm = false
+    @State private var dev = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -139,8 +140,10 @@ struct PrivacyView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(16)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                Button("開発者向け画面（BLE 同期・受信ログ）") { dev = true }
             }.padding()
         }
+        .sheet(isPresented: $dev) { DevView() }
         .alert("クラウド送信をオンにしますか？", isPresented: $confirm) {
             Button("理解してオンにする") { cloud = true }
             Button("やめる", role: .cancel) {}
@@ -162,5 +165,71 @@ struct DevView: View {
             }
             Spacer(minLength: 0)
         }
+    }
+}
+
+// 「先生に伝えたいこと」をAIと相談するアシスタント。返答は固定の台本（ハリボテ）。
+// ponytail: 実際の応答は未接続。つなぐときは ask() の返答を Gemini 等の呼び出しに差し替える。
+private struct Script { let chip, answer, memo: String }
+private struct Msg: Identifiable { let id = UUID(); let mine: Bool; let text: String }
+
+private let scripts = [
+    Script(chip: "何を伝えるべき？", answer: "膝の痛みが今週5日あります。痛む時間帯（朝・午後）と、湿布で和らいだかを伝えると診察が早く進みます。物忘れ（鍵・曜日）も週2回ありました。", memo: "膝の痛み: 週5日・朝と午後・湿布で対応"),
+    Script(chip: "膝の痛みを詳しく", answer: "朝食前後と14時ごろに訴えがあり、「ずきずき」という表現でした。痛みの強さを10段階で本人に聞いておくと、先生に伝えやすくなります。", memo: "痛みの表現: 「ずきずき」（強さは未確認）"),
+    Script(chip: "服薬は大丈夫？", answer: "19:31に「飲んだよ」と返答があり、今週は6/7日で確認できました。確認できなかった1日は、先生にそのまま伝えましょう。", memo: "服薬: 6/7日確認（1日不明）"),
+]
+
+struct SummaryView: View {
+    @State private var msgs = [Msg(mine: false, text: "今日の記録から、先生に伝えるとよさそうな点を見つけました。下のボタンか、自由な文章で相談してください。")]
+    @State private var memo: [String] = []
+    @State private var input = ""
+
+    private func ask(_ q: String, _ a: String, _ m: String) {
+        msgs.append(Msg(mine: true, text: q)); msgs.append(Msg(mine: false, text: a))
+        if !memo.contains(m) { memo.append(m) }
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("本日の要約  \(days[0].date)").font(.headline)
+                Text(days[0].summary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading).padding(12)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(msgs) { m in
+                            HStack {
+                                if m.mine { Spacer(minLength: 40) }
+                                Text(m.text).padding(10)
+                                    .background(m.mine ? pendantTeal : Color(red: 0.7, green: 0.87, blue: 0.86), in: RoundedRectangle(cornerRadius: 16))
+                                    .foregroundColor(m.mine ? .white : .primary)
+                                if !m.mine { Spacer(minLength: 40) }
+                            }.id(m.id)
+                        }
+                        if !memo.isEmpty {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("診察で伝えるメモ").font(.headline)
+                                ForEach(memo, id: \.self) { Text("・\($0)") }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                            .id("memo")
+                        }
+                    }
+                }
+                .onChange(of: msgs.count) { _, _ in withAnimation { proxy.scrollTo(memo.isEmpty ? msgs.last?.id as AnyHashable? : "memo", anchor: .bottom) } }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack { ForEach(scripts, id: \.chip) { sc in Button(sc.chip) { ask(sc.chip, sc.answer, sc.memo) }.buttonStyle(.bordered) } }
+            }
+            HStack {
+                TextField("先生に伝えたいことを相談", text: $input).textFieldStyle(.roundedBorder)
+                Button("送信") { ask(input, "「\(input)」を診察で伝えるメモに追加しました。（ハリボテ: AIの応答は未接続）", input); input = "" }
+                    .buttonStyle(.borderedProminent).disabled(input.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }.padding()
     }
 }
