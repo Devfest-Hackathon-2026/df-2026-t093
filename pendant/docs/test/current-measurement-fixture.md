@@ -2,7 +2,7 @@
 
 Status: **FIXED TEST FIXTURE SPECIFICATION** (2026-10-14, measurement protocol finalized)
 
-This document defines the bench measurement fixture and operating protocol used to characterize lifeOS Pendant power consumption from µA-class deep sleep through BLE, microphone, NAND, and full representative workloads.
+This document defines the bench measurement fixture and operating protocol used to characterize anam pendant power consumption from µA-class deep sleep through BLE, microphone, NAND, and full representative workloads.
 
 This is **test equipment**, not part of the production pendant BOM.
 
