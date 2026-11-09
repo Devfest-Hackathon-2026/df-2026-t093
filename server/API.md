@@ -226,6 +226,19 @@
 - `memos` は**追加後のメモ全件**。アプリはメモの表示を、これで丸ごと置き換えればよい。
 - `text` は 1〜2000 文字。
 
+### `POST /assistant/voice` → 201 【AI・音声】
+
+声で相談する。本文に**音声そのもの**を送る（JSON ではない）。Gemini が聞き取りと返答を 1 回で行う。
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: audio/wav" --data-binary @q.wav $URL/assistant/voice
+```
+
+- 対応形式: `audio/wav`（アプリは 16 kHz mono 16 bit）、`audio/mp4`、`audio/aac`、`audio/mpeg`、`audio/ogg`、`audio/flac`、`audio/webm`。最大 10 MB。
+- 応答は `POST /assistant/messages` と同じ形。`question.text` が聞き取った文（聞き取れなければ「（聞き取れませんでした）」）。
+- 返答は読み上げ向けに、話し言葉で短く返すよう指示している。
+- **クラウド送信がオフなら 409**（声をそのまま外に出すため、台本での代替はしない）。形式違いは 415、空は 400、大きすぎは 413。
+
 ### `DELETE /assistant/messages` → 204
 
 会話をリセットする（メモは残る）。

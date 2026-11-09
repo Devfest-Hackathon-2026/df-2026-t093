@@ -85,22 +85,40 @@ class AssistantOut(BaseModel):
     )
 
 
+class VoiceOut(AssistantOut):
+    transcript: str = Field(description="音声の質問を聞き取った文。聞き取れなければ空文字")
+
+
 def assistant_reply(session: Session, question: str) -> tuple[str, str | None]:
+    out = llm.generate_json(_assistant_context(session) + f"\n\n# 今回の質問\n{question}", AssistantOut)
+    return out.answer, (out.memo or None)
+
+
+def assistant_voice(session: Session, audio: bytes, mime: str) -> tuple[str, str, str | None]:
+    """音声の質問を Gemini に直接渡す。聞き取り (transcript) と返答を1回の呼び出しで得る。"""
+    prompt = _assistant_context(session) + (
+        "\n\n# 今回の質問\n添付の音声です。高齢のご本人が話していることがあります。"
+        "聞き取った質問を transcript に書き、それに答えてください。"
+        "聞き取れなかったときは transcript を空にし、answer でもう一度ゆっくり話してほしいと伝えてください。"
+        "返答は読み上げられるので、記号や箇条書きを使わず、話し言葉で短く答えてください。"
+    )
+    out = llm.generate_json(prompt, VoiceOut, audio=(audio, mime))
+    return out.transcript.strip(), out.answer, (out.memo or None)
+
+
+def _assistant_context(session: Session) -> str:
     today = dt.datetime.now(JST).date()
     days = _days(session, today - dt.timedelta(days=7), today)
     history = session.exec(
         select(AssistantMessage).order_by(AssistantMessage.id.desc()).limit(20)
     ).all()
     memos = session.exec(select(Memo).order_by(Memo.id)).all()
-    prompt = (
-        "家族が「次の診察で先生に何を伝えるか」をあなたと相談しています。"
+    return (
+        "ご本人やご家族が「次の診察で先生に何を伝えるか」をあなたと相談しています。"
         "直近の記録を根拠に答え、伝えるとよい点があれば memo に1行で入れてください。"
         "すでにメモにある内容は memo に入れないでください。\n\n"
         "# 直近7日の記録\n" + ("\n\n".join(_day_text(d) for d in days) or "(なし)") + "\n\n"
         "# 診察で伝えるメモ (現在)\n" + ("\n".join(f"- {m.text}" for m in memos) or "(なし)") + "\n\n"
         "# これまでの会話\n"
-        + "\n".join(f"{'家族' if m.mine else 'あなた'}: {m.text}" for m in reversed(history))
-        + f"\n\n# 今回の質問\n{question}"
+        + "\n".join(f"{'利用者' if m.mine else 'あなた'}: {m.text}" for m in reversed(history))
     )
-    out = llm.generate_json(prompt, AssistantOut)
-    return out.answer, (out.memo or None)

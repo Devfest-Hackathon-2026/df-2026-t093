@@ -194,3 +194,31 @@ def test_gemini_error_is_502(client, monkeypatch):
     client.post("/days/2026-11-09/lines", json=[{"time": "07:42", "who": "ご本人", "text": "膝が痛い"}])
     r = client.post("/days/2026-11-09/summarize")
     assert r.status_code == 502 and "404 model not found" in r.json()["detail"]
+
+
+def test_assistant_voice(client, monkeypatch):
+    from app import ai
+
+    wav = b"RIFF" + b"\0" * 40  # 中身は見ないので形だけ
+    assert client.post("/assistant/voice", content=wav, headers={"Content-Type": "text/plain"}).status_code == 415
+    assert client.post("/assistant/voice", content=b"", headers={"Content-Type": "audio/wav"}).status_code == 400
+    # クラウド送信がオフなら送らない
+    assert client.post("/assistant/voice", content=wav, headers={"Content-Type": "audio/wav"}).status_code == 409
+
+    seen = {}
+
+    def fake(prompt, schema, audio=None):
+        seen["audio"] = audio
+        return schema(transcript="膝が痛いのを先生に言いたい", answer="膝の痛みを伝えましょう。", memo="膝の痛み")
+
+    monkeypatch.setattr(ai.llm, "enabled", lambda: True)
+    monkeypatch.setattr(ai.llm, "generate_json", fake)
+    client.patch("/settings", json={"cloud_enabled": True})
+    r = client.post("/assistant/voice", content=wav, headers={"Content-Type": "audio/wav"})
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert seen["audio"] == (wav, "audio/wav")
+    assert body["question"]["text"] == "膝が痛いのを先生に言いたい"
+    assert body["answer"]["text"] == "膝の痛みを伝えましょう。"
+    assert [m["text"] for m in body["memos"]] == ["膝の痛み"]
+    assert [m["mine"] for m in client.get("/assistant/messages").json()] == [True, False]

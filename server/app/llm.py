@@ -40,14 +40,15 @@ def _client():
     return genai.Client()
 
 
-def generate_json[T: BaseModel](prompt: str, schema: type[T]) -> T:
+def generate_json[T: BaseModel](prompt: str, schema: type[T], audio: tuple[bytes, str] | None = None) -> T:
+    """audio=(データ, MIME) を渡すと、プロンプトと一緒に音声も Gemini に渡す。"""
     from fastapi import HTTPException, status
     from google.genai import types
 
     try:
         r = _client().models.generate_content(
             model=MODEL,
-            contents=prompt,
+            contents=prompt if audio is None else [prompt, types.Part.from_bytes(data=audio[0], mime_type=audio[1])],
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM,
                 response_mime_type="application/json",

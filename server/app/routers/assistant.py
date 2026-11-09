@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from starlette.concurrency import run_in_threadpool
 from sqlmodel import Session, delete, select
 
 from app import ai, assistant
@@ -54,7 +55,36 @@ def ask(payload: AskRequest, session: SessionDep):
         answer_text, memo_text = ai.assistant_reply(session, payload.text)
     else:
         answer_text, memo_text = assistant.reply(payload.text)
-    q = AssistantMessage(mine=True, text=payload.text)
+    return _save(session, payload.text, answer_text, memo_text)
+
+
+# Gemini が受け付ける音声。アプリは audio/wav (16 kHz mono PCM) を送る
+AUDIO_TYPES = {"audio/wav", "audio/x-wav", "audio/mp4", "audio/aac", "audio/mpeg", "audio/mp3", "audio/ogg", "audio/flac", "audio/webm"}
+MAX_AUDIO = 10 * 1024 * 1024  # 16 kHz mono 16 bit で約 5 分
+
+
+@router.post("/assistant/voice", response_model=AskResponse, status_code=status.HTTP_201_CREATED)
+async def ask_voice(request: Request, session: SessionDep):
+    """声で相談する。本文に音声そのもの (Content-Type: audio/wav など) を送ると、Gemini が聞き取って答える。
+
+    クラウド送信がオンのときだけ (音声をそのまま Gemini に渡すため。台本での代替はない)。
+    """
+    mime = request.headers.get("content-type", "").split(";")[0].strip().lower()
+    if mime not in AUDIO_TYPES:
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, f"音声の形式に対応していません: {mime or '(なし)'}")
+    audio = await request.body()
+    if not audio:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "音声が空です")
+    if len(audio) > MAX_AUDIO:
+        raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "音声が長すぎます")
+    ai.require_cloud(session)
+    # Gemini の呼び出しは数秒かかるので、イベントループを止めないようスレッドで待つ
+    transcript, answer_text, memo_text = await run_in_threadpool(ai.assistant_voice, session, audio, mime)
+    return _save(session, transcript or "（聞き取れませんでした）", answer_text, memo_text)
+
+
+def _save(session: Session, question: str, answer_text: str, memo_text: str | None) -> AskResponse:
+    q = AssistantMessage(mine=True, text=question)
     a = AssistantMessage(mine=False, text=answer_text)
     session.add(q)
     session.add(a)
