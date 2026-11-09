@@ -1,0 +1,188 @@
+/dts-v1/;
+
+#include <nordic/nrf54l15_cpuapp.dtsi>
+#include <zephyr/dt-bindings/adc/adc.h>
+#include "bc15m-pinctrl.dtsi"
+
+/ {
+	model = "Fanstel BC15M";
+	compatible = "fanstel,bc15m-cpuapp";
+
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+		zephyr,sram = &cpuapp_sram;
+		zephyr,flash = &cpuapp_rram;
+		zephyr,flash-controller = &rram_controller;
+		zephyr,console = &uart30;
+		zephyr,shell-uart = &uart30;
+		nordic,rpc-uart = &uart30;
+		zephyr,ieee802154 = &ieee802154;
+	};
+
+	aliases {
+		watchdog0 = &wdt31;
+	};
+
+	zephyr,user {
+		mic-en-gpios = <&gpio2 0 GPIO_ACTIVE_HIGH>;
+		batsense-en-gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+		nand-en-gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
+		mic-wake-gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;
+		ths-sel-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
+		ind-run-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+		btn-gpios = <&gpio1 7 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+		marker-rec-gpios = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+		marker-store-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
+		marker-ble-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>;
+	};
+
+	mic_en: mic-en {
+		compatible = "regulator-fixed";
+		regulator-name = "MIC_1V8";
+		enable-gpios = <&gpio2 0 GPIO_ACTIVE_HIGH>;
+	};
+
+	batsense_en: batsense-en {
+		compatible = "regulator-fixed";
+		regulator-name = "VBAT_SENSE";
+		enable-gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+	};
+
+	nand_en: nand-en {
+		compatible = "regulator-fixed";
+		regulator-name = "NAND_1V8";
+		enable-gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&cpuapp_sram {
+	status = "okay";
+};
+
+&grtc {
+	owned-channels = <0 1 2 3 4 5 6 7 8 9 10 11>;
+	child-owned-channels = <3 4 7 8 9 10 11>;
+	status = "okay";
+};
+
+&clock {
+	status = "okay";
+};
+
+&uart30 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart30_default>;
+	pinctrl-1 = <&uart30_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2c22 {
+	status = "okay";
+	clock-frequency = <100000>;
+	pinctrl-0 = <&i2c22_default>;
+	pinctrl-1 = <&i2c22_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi00 {
+	status = "okay";
+	cs-gpios = <&gpio2 5 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi00_default>;
+	pinctrl-1 = <&spi00_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2s20 {
+	status = "okay";
+	clock-source = "PCLK32M_HFXO";
+	pinctrl-0 = <&i2s20_default>;
+	pinctrl-names = "default";
+};
+
+&adc {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 40)>;
+		zephyr,input-positive = <NRF_SAADC_AIN0>;
+		zephyr,resolution = <12>;
+		zephyr,oversampling = <8>;
+	};
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpiote20 {
+	status = "okay";
+};
+
+&gpiote30 {
+	status = "okay";
+};
+
+&regulators {
+	status = "okay";
+};
+
+&vregmain {
+	status = "okay";
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&lfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <7000>;
+	status = "okay";
+};
+
+&hfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <17000>;
+	status = "okay";
+};
+
+&ieee802154 {
+	status = "okay";
+};
+
+&temp {
+	status = "okay";
+};
+
+&radio {
+	status = "okay";
+};
+
+&wdt31 {
+	status = "okay";
+};
+
+/* P1.03 is the I2S WS pin; the NFC function must not claim it. */
+&nfct {
+	status = "disabled";
+};
+
+&uicr {
+	nfct-pins-as-gpios;
+};
+
+/* Standard rev 0 has no PDM microphone. */
+/delete-node/ &pdm20;
+
+#include <vendor/nordic/nrf54l15_cpuapp_partition.dtsi>

@@ -1,0 +1,173 @@
+mainmenu "lifeOS Pendant"
+
+config PENDANT_CHUNK_BYTES
+	int "ADPCM payload bytes per record (8 s at 32 kbps = 32000)"
+	default 32000
+	range 4000 65536
+	help
+	  Must be a multiple of 400 (one 100 ms PDM block = 800 samples = 400 ADPCM bytes).
+	  Changing it changes the ring's maximum record size, so reformat (PENDANT_FORMAT_ON_BOOT).
+
+config PENDANT_MIC_GAIN
+	depends on PENDANT_AUDIO_SOURCE_PDM
+	int "PDM hardware gain in 0.5 dB steps (40 = 0 dB, 80 = +20 dB)"
+	default 64
+	range 0 80
+	help
+	  The MSM261 on the XIAO Sense is -26 dBFS at 94 dB SPL, so talking at 60 dB SPL arrives at
+	  about -60 dBFS (rms ~30 LSB), close to ADPCM's smallest step (7). Gain before encoding.
+
+config PENDANT_PDM_CLK_MIN
+	depends on PENDANT_AUDIO_SOURCE_PDM
+	int "Lowest PDM clock the driver may choose (Hz)"
+	default 1000000
+	help
+	  The XIAO's MSM261 wants 1-3.5 MHz. The T5838 low-power mode wants about 768 kHz (its datasheet:
+	  AAD D1 and Low-Power mode at CLK = 768 kHz), so Phase 1 needs 600000 here if the nRF can do it.
+
+config PENDANT_PDM_CLK_MAX
+	depends on PENDANT_AUDIO_SOURCE_PDM
+	int "Highest PDM clock the driver may choose (Hz)"
+	default 3500000
+
+config PENDANT_PCM_RATE
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	int "PCM sample rate after source conversion (Hz)"
+	default 8000
+
+config PENDANT_DC_BLOCK
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	bool "Remove the microphone's DC offset before ADPCM"
+	default y
+	help
+	  The MSM261 sits at -90 LSB at 0 dB gain and the offset grows with the gain (about -1000 at
+	  +20 dB). A 5 Hz one-pole high-pass keeps the ADPCM step range for the speech.
+
+choice PENDANT_AUDIO_SOURCE
+	prompt "Audio input source"
+	default PENDANT_AUDIO_SOURCE_PDM if BOARD_XIAO_NRF54L15_NRF54L15_CPUAPP
+	default PENDANT_AUDIO_SOURCE_NONE
+	help
+	  PDM is the XIAO's on-board MSM261. Standard rev 0 has no PDM; its T5848 I2S source is
+	  added with issue #35.
+
+config PENDANT_AUDIO_SOURCE_NONE
+	bool "No audio source (build-only)"
+
+config PENDANT_AUDIO_SOURCE_PDM
+	bool "PDM (XIAO on-board MSM261)"
+	depends on DT_HAS_NORDIC_NRF_PDM_ENABLED
+	select AUDIO
+	select AUDIO_DMIC
+
+config PENDANT_AUDIO_SOURCE_I2S
+	bool "I2S (T5848 on BC15M)"
+	depends on DT_HAS_NORDIC_NRF_I2S_ENABLED
+	select I2S
+
+endchoice
+
+config PENDANT_WDT
+	bool "Hardware watchdog fed by the heartbeat supervisor"
+	default y
+
+config PENDANT_WDT_TIMEOUT_MS
+	int "Watchdog timeout"
+	default 8000
+
+config PENDANT_AUDIO_MAX_READ_ERRORS
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	int "Consecutive audio read errors before the audio thread stops"
+	default 5
+	range 1 100
+	help
+	  A dead microphone must not keep feeding the audio heartbeat. After this many consecutive
+	  errors the thread exits and leaves the supervisor armed, so the watchdog resets the chip.
+
+config PENDANT_TEST_HANG_S
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	int "Test: hang the audio thread after this many seconds of recording (0 = never)"
+	default 0
+	help
+	  Used to see the watchdog work: the supervisor stops feeding, the chip resets and the next
+	  boot logs and records the cause.
+
+config PENDANT_TEST_READ_ERRORS
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	int "Test: inject this many audio read errors in total, starting with the first read (0 = never)"
+	default 0
+	range 0 100
+	help
+	  Exercises the read-error limit once per boot. Keep it below PENDANT_AUDIO_MAX_READ_ERRORS
+	  to test recovery, or above it to test the watchdog reset.
+
+config PENDANT_TEST_WRITER_STALL_MS
+	int "Test: sleep in the writer before each ring append (ms, 0 = off)"
+	default 0
+	range 0 60000
+	help
+	  Holds a chunk buffer long enough for the audio thread to block on the full queue, so
+	  audio_stop() can be tested while the writer is stalled.
+
+config PENDANT_TEST_AUDIO_CYCLES
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	int "Test: run this many audio start/stop cycles before the scenario (0 = off)"
+	default 0
+	range 0 100
+	help
+	  Each cycle records long enough for at least one full chunk and stops in the middle of the
+	  next one. After every cycle it checks that the thread is gone and a chunk was produced. With
+	  no writer stall it also checks that no chunk buffer was lost. Run it once without the stall
+	  and once with a stall longer than a chunk. Use with PENDANT_MEASURE.
+
+config PENDANT_TEST_OTA_DENY
+	bool "Test: refuse OTA uploads as if the battery were too low"
+
+config PENDANT_OTA_CONFIRM_S
+	int "Seconds of healthy running before a new image is confirmed"
+	default 30
+
+config PENDANT_FORMAT_ON_BOOT
+	bool "Erase the ring at every boot (development)"
+
+config PENDANT_RELEASE
+	bool "Release build checks (product key, downgrade, WDT, security)"
+	default n
+	help
+	  Product images set this. The build rejects the NCS development signing key,
+	  a missing downgrade protection, a disabled watchdog, and insecure BLE.
+
+config PENDANT_REQUIRE_PROVISIONING
+	bool "Only record after a bond and a valid TIME"
+	help
+	  Product builds set this and PENDANT_BLE_SECURE=y. Recording stays off until the
+	  device has keys, a bond, and a phone-supplied time (docs/spec/security.md §6.2).
+
+config PENDANT_AUTO_RECORD
+	bool "Start recording at boot"
+	depends on !PENDANT_AUDIO_SOURCE_NONE
+	default y
+
+config PENDANT_BLE
+	bool "BLE sync service"
+	default y
+
+config PENDANT_BLE_SECURE
+	bool "Require an encrypted link for every characteristic"
+	help
+	  Off in Phase 0 bench builds. Pairing method and privacy are open (issue #26); do not
+	  ship with this off.
+
+config PENDANT_CRYPTO_BENCH
+	bool "Boot-time AES-GCM benchmark on one record (issue #26 cost estimate)"
+
+config PENDANT_MEASURE
+	depends on PENDANT_AUDIO_SOURCE_PDM || PENDANT_AUDIO_SOURCE_I2S
+	bool "Measurement build: no logging, no UART, scenario loop with GPIO markers"
+	help
+	  Build with -DEXTRA_CONF_FILE=measure.conf. The scenario (src/scenario.c) cycles through
+	  idle, source only, source + ADPCM, source + ADPCM + ring writes, and advertising, 20 s each.
+	  Each segment starts with n pulses on the BLE marker (D15), n = segment number, while
+	  everything else is quiet. A BLE sync is started from the phone side at any time.
+
+source "Kconfig.zephyr"

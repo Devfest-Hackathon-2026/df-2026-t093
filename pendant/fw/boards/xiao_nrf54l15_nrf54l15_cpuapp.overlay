@@ -1,0 +1,26 @@
+/* Board default turns these on at boot. Off for power measurement (docs/plan/prototype.md §2.3). */
+
+/ {
+	zephyr,user {
+		marker-rec-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>;   /* D6 */
+		marker-store-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>; /* D7 */
+		marker-ble-gpios = <&gpio2 6 GPIO_ACTIVE_HIGH>;   /* D15 (back pad) */
+	};
+};
+
+/* Mic + IMU load switch. Enable at runtime only while recording. */
+&pdm_imu_pwr {
+	/delete-property/ regulator-boot-on;
+};
+
+/* Battery divider: VBAT follows VBUS when fed from the 5V pin (~240 µA at 4.8 V). */
+&vbat_pwr {
+	/delete-property/ regulator-boot-on;
+};
+
+/* Watchdog for the heartbeat supervisor (docs/spec/firmware.md §4.1). */
+&wdt31 {
+	status = "okay";
+};
+
+#include "pendant_partitions.dtsi"

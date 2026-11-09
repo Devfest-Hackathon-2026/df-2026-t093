@@ -1,0 +1,2 @@
+/* Standard rev 0: MCUboot + the ring partition layout (docs/spec/firmware.md §2.1). */
+#include "pendant_partitions.dtsi"

@@ -1,0 +1,35 @@
+/* RRAM layout with MCUboot (docs/spec/firmware.md §2.1, issue #11). Included by the app overlay and by the MCUboot
+ * overlay (sysbuild/mcuboot.overlay), so both agree. 1524 KB of RRAM:
+ *   mcuboot 62 KB | image-0 320 KB | image-1 320 KB | storage 36 KB | ring 784 KB
+ * The Phase 0 ring used slot1; it moves to its own partition so MCUboot can have a secondary slot. */
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &storage_partition;
+
+&cpuapp_rram {
+	partitions {
+		slot0_partition: partition@10000 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-0";
+			reg = <0x10000 DT_SIZE_K(320)>;
+		};
+
+		slot1_partition: partition@60000 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-1";
+			reg = <0x60000 DT_SIZE_K(320)>;
+		};
+
+		storage_partition: partition@b0000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <0xb0000 DT_SIZE_K(36)>;
+		};
+
+		ring_partition: partition@b9000 {
+			compatible = "zephyr,mapped-partition";
+			label = "ring";
+			reg = <0xb9000 DT_SIZE_K(784)>;
+		};
+	};
+};
