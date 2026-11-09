@@ -4,3 +4,4 @@ hw/**/*.kicad_prl
 hw/**/fp-info-cache
 hw/**/*.lck
 fw/lib/.build/
+.DS_Store
