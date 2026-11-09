@@ -18,7 +18,11 @@ import dev.lifeos.pendant.UiState
 // ハリボテ: 見た目と画面遷移を決めるための固定データ。録音の有無・接続状態・最終同期だけ実データ（UiState）。
 // ponytail: 保存・文字起こし・要約・共有は未接続。実装するときはここの固定データを差し替える。
 
-val PendantScheme = lightColorScheme(primary = Color(0xFF00796B), secondary = Color(0xFF455A64), tertiary = Color(0xFFB00020))
+val PendantScheme = lightColorScheme(
+    primary = Color(0xFF00796B), secondary = Color(0xFF455A64), tertiary = Color(0xFFB00020),
+    secondaryContainer = Color(0xFFB2DFDB), background = Color(0xFFF6FBF9), surface = Color(0xFFF6FBF9),
+    surfaceContainer = Color(0xFFE3F2EF), surfaceContainerHighest = Color(0xFFE0EEEB),
+)
 
 private class Line(val time: String, val who: String, val text: String)
 private class Day(val date: String, val summary: String, val audio: String, val lines: List<Line>)
