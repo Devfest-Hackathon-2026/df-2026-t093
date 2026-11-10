@@ -1,0 +1,12 @@
+ecapa_int8.onnx
+
+このモデルは SpeechBrain の学習済みモデル speechbrain/spkrec-ecapa-voxceleb
+(https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb) を ONNX に変換し、
+INT8 に量子化したものです (変換手順: export/export_onnx.py, export/quantize_eval.py)。
+
+元のモデル: Copyright SpeechBrain contributors
+ライセンス: Apache License 2.0 (同じフォルダの LICENSE-Apache-2.0.txt)
+変更点: ONNX への変換、Fbank 前処理のグラフへの同梱、INT8 (static QDQ) 量子化
+
+元のモデルの学習データは VoxCeleb1 / VoxCeleb2
+(https://www.robots.ox.ac.uk/~vgg/data/voxceleb/、CC BY 4.0) です。

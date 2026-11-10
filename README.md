@@ -44,7 +44,7 @@ DevFest GDGoC Japan Hackathon 2026 の提出物。
 | `pendant/docs/spec/` | ペンダントの仕様（電源・音声・保存・同期形式・RF・筐体など） |
 | `pendant/brand/` | ロゴ（SVG）とアプリアイコン |
 | `export/`、`app/`、`report/` | 話者照合（ECAPA-TDNN を INT8 化してスマホで動かす）の PoC。[下記](#話者照合-pocecapa-tdnn) |
-| `server/`（**`server` ブランチ**） | pendant-api。API 仕様は `server/API.md`、デプロイは `server/deploy.sh` |
+| `server/` | pendant-api。API 仕様は `server/API.md`、デプロイは `server/deploy.sh` |
 
 ## アプリを動かす
 
